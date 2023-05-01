@@ -20,7 +20,7 @@ required_pypi = [
 ]
 
 setuptools.setup(
-    name="project_name",
+    name="clin",
     version="0.01",
     author="Microsoft Research",
     author_email="",

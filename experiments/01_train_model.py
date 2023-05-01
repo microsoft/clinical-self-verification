@@ -11,8 +11,8 @@ import joblib
 import imodels
 import inspect
 
-import project_name.model
-import project_name.data
+import clin.model
+import clin.data
 import cache_save_utils
 
 
