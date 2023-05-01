@@ -2,8 +2,8 @@ import os
 from os.path import dirname, join
 
 
-# def test_small_pipeline():
-#     repo_dir = dirname(dirname(os.path.abspath(__file__)))
+def test_small_pipeline():
+    repo_dir = dirname(dirname(os.path.abspath(__file__)))
 #     prefix = f'PYTHONPATH={join(repo_dir, "experiments")}'
 #     cmd = prefix + ' python ' + \
 #         os.path.join(repo_dir, 'experiments',

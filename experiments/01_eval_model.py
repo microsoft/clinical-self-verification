@@ -29,7 +29,7 @@ def add_main_args(parser):
 
     # dataset args
     parser.add_argument('--dataset_name', type=str,
-                        default='rotten_tomatoes', help='name of dataset')
+                        default='medication_status', help='name of dataset')
     parser.add_argument('--subsample_frac', type=float,
                         default=1, help='fraction of samples to use')
 
@@ -86,8 +86,11 @@ if __name__ == '__main__':
 
     # load text data
     # dataset: mitclinicalml/clinical-ie
+    if args.dataset_name in ['medication_status', 'medication_attr', 'coreference']:
     # 3 splits here: 'medication_status', 'medication_attr', 'coreference
-    dset = datasets.load_dataset('mitclinicalml/clinical-ie', 'medication_status')
+        dset = datasets.load_dataset('mitclinicalml/clinical-ie', args.dataset_name)
+    else:
+        dset = datasets.load_dataset(args.dataset_name)
     val = pd.DataFrame.from_dict(dset['validation'])
     test = pd.DataFrame.from_dict(dset['test'])
     df = pd.concat([val, test])
@@ -119,7 +122,7 @@ if __name__ == '__main__':
             examples_nums_shot = nums[i - args.n_shots: i]
         ex_num = nums[i]
         prompt = clin.prompts.get_multishot_prompt(df, examples_nums_shot, ex_num)
-        print('prompt', prompt)
+        # print('prompt', prompt)
 
         response = None
         while response is None:

@@ -1,15 +1,15 @@
 import numpy as np
 from typing import List
 
+def str_to_list(s):
+    l = s.replace('[', '').replace(']', '').split(',')
+    l = [val.strip() for val in l]
+    if l == ['']:
+        return []
+    else:
+        return l
+
 def list_medications(row) -> str:
-        def str_to_list(s):
-            l = s.replace('[', '').replace(']', '').split(',')
-            l = [val.strip() for val in l]
-            if l == ['']:
-                return []
-            else:
-                return l
-            
         d = [('active', val) for val in str_to_list(row['active_medications'])] + \
             [('discontinued', val) for val in str_to_list(row['discontinued_medications'])] + \
             [('neither', val) for val in str_to_list(row['neither_medications'])]
