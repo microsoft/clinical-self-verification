@@ -1,4 +1,4 @@
-import submit_utils
+from imodelsx import submit_utils
 from os.path import dirname, join
 import os.path
 repo_dir = dirname(dirname(os.path.abspath(__file__)))
@@ -11,7 +11,8 @@ params_shared_dict = {
     'seed': [1],
     'save_dir': [join(repo_dir, 'results')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
-    'n_shots': [0, 1, 5],
+    'n_shots': [1, 5, 10],
+    'checkpoint': ['gpt-4-0314', 'gpt-3.5-turbo', 'text-davinci-003'],
 }
 
 # List of tuples to sweep over (these values are coupled, and swept over together)

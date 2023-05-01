@@ -102,7 +102,19 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
                     {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
                     {"role": "user", "content": "Where was it played?"}
                 ]
+            prompts_list: str
+                Alternatively, string which gets formatted into basic prompts_list:
+                messages = [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": <<<<<prompts_list>>>>},
+                ]
             """
+            if isinstance(prompts_list, str):
+                prompts_list = [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompts_list},
+                ]
+
             assert isinstance(prompts_list, list), prompts_list
 
             # cache
@@ -135,7 +147,7 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
             )
 
             pkl.dump(response, open(cache_file_raw, "wb"))
-            return response
+            return response['choices'][0]['message']['content']
 
     return LLM_Chat(checkpoint)
 

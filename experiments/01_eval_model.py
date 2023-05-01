@@ -40,7 +40,7 @@ def add_main_args(parser):
                         help='directory for saving')
 
     # model args
-    parser.add_argument('--checkpoint', type=str, choices=['gpt-4-0314'],
+    parser.add_argument('--checkpoint', type=str, # choices=['gpt-4-0314', 'gpt-3.5-turbo', 'text-davinci-003',],
                         default='gpt-4-0314', help='name of llm checkpoint')
 
 
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     df = pd.concat([val, test])
 
     # load model
-    llm = clin.llm.get_llm('gpt-4-0314')
+    llm = clin.llm.get_llm(args.checkpoint)
 
     # set up saving dictionary + save params file
     r = defaultdict(list)
@@ -117,16 +117,15 @@ if __name__ == '__main__':
         response = None
         while response is None:
             try:
-                messages = [
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt},
-                ]
-                response = llm(messages)
+                response = llm(prompt)
+
+                # fix for when this function was returning response rather than string
+                if response is not None and not isinstance(response, str):
+                    response = response['choices'][0]['message']['content']
             except:
                 time.sleep(1)
         # if response is not None:
-        response_text = response['choices'][0]['message']['content']
-        r['resps'].append(response_text)
+        r['resps'].append(response)
 
     # compute metrics
     mets_dict = defaultdict(list)
@@ -135,9 +134,9 @@ if __name__ == '__main__':
         # print(i)
         medications_list_resp = clin.eval.parse_response_medication_list(r['resps'][i])
         mets = clin.eval.eval_med_extraction(medications_list_resp, dfe.iloc[i])
-        for k in ['precision', 'recall']:
+        for k in mets.keys():
             mets_dict[k].append(mets[k])
-    for k in ['precision', 'recall']:
+    for k in mets_dict.keys():
         r[k] = np.mean(mets_dict[k])
 
     # print metrics
