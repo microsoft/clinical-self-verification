@@ -10,34 +10,16 @@ from sklearn.model_selection import train_test_split
 import joblib
 import imodels
 import inspect
+import datasets
+import pandas as pd
+from tqdm import tqdm
+import time
+from typing import List
 
-import clin.model
-import clin.data
+import clin.llm
+import clin.prompts
 import cache_save_utils
 
-
-def fit_model(model, X_train, y_train, feature_names, r):
-    # fit the model
-    fit_parameters = inspect.signature(model.fit).parameters.keys()
-    if 'feature_names' in fit_parameters and feature_names is not None:
-        model.fit(X_train, y_train, feature_names=feature_names)
-    else:
-        model.fit(X_train, y_train)
-
-    return r, model
-
-def evaluate_model(model, X_train, X_cv, X_test, y_train, y_cv, y_test, r):
-    """Evaluate model performance on each split
-    """
-    metrics = {
-        'accuracy': accuracy_score,
-    }
-    for split_name, (X_, y_) in zip(['train', 'cv', 'test'], [(X_train, y_train), (X_cv, y_cv), (X_test, y_test)]):
-        y_pred_ = model.predict(X_)
-        for metric_name, metric_fn in metrics.items():
-            r[f'{metric_name}_{split_name}'] = metric_fn(y_, y_pred_)
-        
-    return r
 
 # initialize args
 def add_main_args(parser):
@@ -58,12 +40,12 @@ def add_main_args(parser):
                         help='directory for saving')
 
     # model args
-    parser.add_argument('--model_name', type=str, choices=['decision_tree', 'ridge'],
-                        default='decision_tree', help='name of model')
-    parser.add_argument('--alpha', type=float, default=1,
-                        help='regularization strength')
-    parser.add_argument('--max_depth', type=int,
-                        default=2, help='max depth of tree')
+    parser.add_argument('--checkpoint', type=str, choices=['gpt-4-0314'],
+                        default='gpt-4-0314', help='name of llm checkpoint')
+
+
+    # prompt args
+    parser.add_argument('--n_shots', type=int, default=0, help='number of shots')
     return parser
 
 def add_computational_args(parser):
@@ -103,20 +85,19 @@ if __name__ == '__main__':
     # torch.manual_seed(args.seed)
 
     # load text data
-    dset, dataset_key_text = project_name.data.load_huggingface_dataset(
-        dataset_name=args.dataset_name, subsample_frac=args.subsample_frac)
-    X_train, X_test, y_train, y_test, feature_names = project_name.data.convert_text_data_to_counts_array(
-        dset, dataset_key_text)    
+    # dataset: mitclinicalml/clinical-ie
+    # 3 splits here: 'medication_status', 'medication_attr', 'coreference
+    dset = datasets.load_dataset('mitclinicalml/clinical-ie', 'medication_status')
+    val = pd.DataFrame.from_dict(dset['validation'])
+    test = pd.DataFrame.from_dict(dset['test'])
+    df = pd.concat([val, test])
 
-    # load tabular data
-    # https://csinva.io/imodels/util/data_util.html#imodels.util.data_util.get_clean_dataset
-    # X_train, X_test, y_train, y_test, feature_names = imodels.get_clean_dataset('compas_two_year_clean', data_source='imodels', test_size=0.33)
-
-
-    X_train, X_cv, y_train, y_cv = train_test_split(X_train, y_train, test_size=0.33, random_state=args.seed)    
+    
 
     # load model
-    model = project_name.model.get_model(args)
+    llm = clin.llm.get_llm('gpt-4-0314')
+
+
 
     # set up saving dictionary + save params file
     r = defaultdict(list)
@@ -125,13 +106,39 @@ if __name__ == '__main__':
     cache_save_utils.save_json(
         args=args, save_dir=save_dir_unique, fname='params.json', r=r)
 
-    # fit
-    r, model = fit_model(model, X_train, y_train, feature_names, r)
-    
-    # evaluate
-    r = evaluate_model(model, X_train, X_cv, X_test, y_train, y_cv, y_test, r)
+
+    # evaluate model
+    resps = []
+    nums = np.arange(len(df)).tolist()
+    np.random.default_rng(seed=13).shuffle(nums)
+    for i in tqdm(range(len(nums))):
+        # print(i)
+        if i - args.n_shots < 0:
+            examples_nums_shot = nums[i - args.n_shots:] + nums[:i]
+        else:
+            examples_nums_shot = nums[i - args.n_shots: i]
+        ex_num = nums[i]
+        prompt = clin.prompts.get_multishot_prompt(df, examples_nums_shot, ex_num)
+        print('prompt', prompt)
+
+        response = None
+        while response is None:
+            try:
+                messages = [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt},
+                    # {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
+                    # {"role": "user", "content": "Where was it played?"}
+                ]
+                response = llm(messages)
+            except:
+                time.sleep(1)
+        # if response is not None:
+        response_text = response['choices'][0]['message']['content']
+        resps.append(response_text)
+    r['resps'] = resps
+
 
     # save results
     joblib.dump(r, join(save_dir_unique, 'results.pkl')) # caching requires that this is called results.pkl
-    joblib.dump(model, join(save_dir_unique, 'model.pkl'))
     logging.info('Succesfully completed :)\n\n')
