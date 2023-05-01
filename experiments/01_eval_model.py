@@ -15,10 +15,12 @@ import pandas as pd
 from tqdm import tqdm
 import time
 from typing import List
+import torch
 
 import clin.llm
 import clin.prompts
-import cache_save_utils
+import clin.eval
+from imodelsx import cache_save_utils
 
 
 # initialize args
@@ -30,8 +32,6 @@ def add_main_args(parser):
     # dataset args
     parser.add_argument('--dataset_name', type=str,
                         default='medication_status', help='name of dataset')
-    parser.add_argument('--subsample_frac', type=float,
-                        default=1, help='fraction of samples to use')
 
     # training misc args
     parser.add_argument('--seed', type=int, default=1,
@@ -70,7 +70,6 @@ if __name__ == '__main__':
     # set up saving directory + check for cache
     already_cached, save_dir_unique = cache_save_utils.get_save_dir_unique(
         parser, parser_without_computational_args, args, args.save_dir)
-    
     if args.use_cache and already_cached:
         logging.info(
             f'cached version exists! Successfully skipping :)\n\n\n')
@@ -82,12 +81,10 @@ if __name__ == '__main__':
     # set seed
     np.random.seed(args.seed)
     random.seed(args.seed)
-    # torch.manual_seed(args.seed)
+    torch.manual_seed(args.seed)
 
     # load text data
-    # dataset: mitclinicalml/clinical-ie
     if args.dataset_name in ['medication_status', 'medication_attr', 'coreference']:
-    # 3 splits here: 'medication_status', 'medication_attr', 'coreference
         dset = datasets.load_dataset('mitclinicalml/clinical-ie', args.dataset_name)
     else:
         dset = datasets.load_dataset(args.dataset_name)
@@ -95,12 +92,8 @@ if __name__ == '__main__':
     test = pd.DataFrame.from_dict(dset['test'])
     df = pd.concat([val, test])
 
-    
-
     # load model
     llm = clin.llm.get_llm('gpt-4-0314')
-
-
 
     # set up saving dictionary + save params file
     r = defaultdict(list)
@@ -109,20 +102,17 @@ if __name__ == '__main__':
     cache_save_utils.save_json(
         args=args, save_dir=save_dir_unique, fname='params.json', r=r)
 
-
     # evaluate model
     resps = []
     nums = np.arange(len(df)).tolist()
     np.random.default_rng(seed=13).shuffle(nums)
     for i in tqdm(range(len(nums))):
-        # print(i)
         if i - args.n_shots < 0:
             examples_nums_shot = nums[i - args.n_shots:] + nums[:i]
         else:
             examples_nums_shot = nums[i - args.n_shots: i]
         ex_num = nums[i]
         prompt = clin.prompts.get_multishot_prompt(df, examples_nums_shot, ex_num)
-        # print('prompt', prompt)
 
         response = None
         while response is None:
@@ -130,16 +120,29 @@ if __name__ == '__main__':
                 messages = [
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": prompt},
-                    # {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
-                    # {"role": "user", "content": "Where was it played?"}
                 ]
                 response = llm(messages)
             except:
                 time.sleep(1)
         # if response is not None:
         response_text = response['choices'][0]['message']['content']
-        resps.append(response_text)
-    r['resps'] = resps
+        r['resps'].append(response_text)
+
+    # compute metrics
+    mets_dict = defaultdict(list)
+    dfe = df.iloc[nums]
+    for i in range(len(dfe)):
+        # print(i)
+        medications_list_resp = clin.eval.parse_response_medication_list(r['resps'][i])
+        mets = clin.eval.eval_med_extraction(medications_list_resp, dfe.iloc[i])
+        for k in ['precision', 'recall']:
+            mets_dict[k].append(mets[k])
+    for k in ['precision', 'recall']:
+        r[k] = np.mean(mets_dict[k])
+
+    # print metrics
+    logging.info(f'precision: {r["precision"]}')
+    logging.info(f'recall: {r["recall"]}')
 
 
     # save results
