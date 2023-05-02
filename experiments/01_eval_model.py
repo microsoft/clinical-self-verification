@@ -19,6 +19,7 @@ import torch
 
 import clin.llm
 import clin.prompts
+import clin.parse
 import clin.eval
 from imodelsx import cache_save_utils
 
@@ -88,9 +89,9 @@ if __name__ == '__main__':
         dset = datasets.load_dataset('mitclinicalml/clinical-ie', args.dataset_name)
     else:
         dset = datasets.load_dataset(args.dataset_name)
-    val = pd.DataFrame.from_dict(dset['validation'])
-    test = pd.DataFrame.from_dict(dset['test'])
-    df = pd.concat([val, test])
+    # val = pd.DataFrame.from_dict(dset['validation'])
+    df = pd.DataFrame.from_dict(dset['test'])
+    # df = pd.concat([val, test])
 
     # load model
     llm = clin.llm.get_llm(args.checkpoint)
@@ -132,7 +133,7 @@ if __name__ == '__main__':
     dfe = df.iloc[nums]
     for i in range(len(dfe)):
         # print(i)
-        medications_list_resp = clin.eval.parse_response_medication_list(r['resps'][i])
+        medications_list_resp = clin.parse.parse_response_medication_list(r['resps'][i])
         mets = clin.eval.eval_med_extraction(medications_list_resp, dfe.iloc[i])
         for k in mets.keys():
             mets_dict[k].append(mets[k])
