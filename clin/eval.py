@@ -27,9 +27,9 @@ def eval_med_extraction(med_status_dict: Dict[str, str], df_row: pd.Series) -> L
         clin.prompts.str_to_list(df_row['neither_medications'])
     meds_true = [med.strip(' "').lower() for med in meds_true]
 
-    print(sorted(meds_retrieved))
-    print(sorted(meds_true))
-    print()    
+    # print(sorted(meds_retrieved))
+    # print(sorted(meds_true))
+    # print()    
 
     # compute precision and recall
     precision = len(set(meds_retrieved).intersection(set(meds_true))) / len(meds_retrieved)
@@ -47,6 +47,16 @@ def eval_med_extraction(med_status_dict: Dict[str, str], df_row: pd.Series) -> L
         'f1': f1,
     }
 
+
+def calculate_metrics(med_status_dicts: List, dfe: pd.DataFrame):
+    mets_dict = defaultdict(list)
+    for i in range(len(dfe)):
+        # print(i)
+        # medications_list_resp = clin.parse.parse_response_medication_list(r['resps'][i])
+        mets = eval_med_extraction(med_status_dicts[i], dfe.iloc[i])
+        for k in mets.keys():
+            mets_dict[k].append(mets[k])
+    return mets_dict
 
 def eval_medication_status(dfe: pd.DataFrame, r: pd.DataFrame):
     """Compute the metrics for medication status,

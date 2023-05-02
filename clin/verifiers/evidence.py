@@ -188,9 +188,9 @@ class EvidenceVerifier:
         # print(exs.shape)
         # print(exs[0])
         self.prompt = f"""Verify whether each extracted medication is present in the patient note in a bulleted list.
-If it is present, extract the span of text from the patient note as evidence. If it is not, write "{NO_EVIDENCE}".""" + '\n\n' + '\n\n\n'.join(exs)
+If it is present, extract the span of text from the patient note as evidence. If it is not clearly present, write "{NO_EVIDENCE}".""" + '\n\n' + '\n\n\n'.join(exs)
 
-    def __call__(self, snippet, bulleted_str, llm) -> Dict[str, Tuple[str, str]]:
+    def __call__(self, snippet, bulleted_str, llm) -> Tuple[Dict[str, str]]:
         prompt_ex = self.prompt + '\n\n\n' + f'''Patient Note
 ------------
 {snippet}
@@ -203,11 +203,11 @@ Evidence
 --------
 -'''
         meds_with_evidence_str = llm(prompt_ex)
-        meds_with_evidence_dict = clin.parse.parse_response_medication_list_with_evidence(meds_with_evidence_str)
-        return meds_with_evidence_dict
+        med_status_dict, med_evidence_dict  = clin.parse.parse_response_medication_list_with_evidence(meds_with_evidence_str)
+        return med_status_dict, med_evidence_dict
 
 if __name__ == '__main__':
-    ev = EvidenceVerifier(n_shots_neg=1, n_shots_pos=1)
-    print(len(ev.prompt))
+    ev = EvidenceVerifier(n_shots_neg=2, n_shots_pos=0)
+    print('\n\n\n', len(ev.prompt), '**********************************************')
     print(ev.prompt)
 

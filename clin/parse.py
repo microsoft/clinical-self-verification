@@ -58,7 +58,7 @@ def parse_response_medication_list(s: str) -> Dict[str, str]:
     return med_status_dict
 
 
-def parse_response_medication_list_with_evidence(s: str) -> Dict[str, Tuple[str, str]]:
+def parse_response_medication_list_with_evidence(s: str) -> Tuple[Dict[str, str]]:
     """
     "Percocet" (discontinued) "along with Percocet for breakthrough pain which was then switched to OxyContin IR"
     - "Gemzar" (active) "received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty"
@@ -67,17 +67,26 @@ def parse_response_medication_list_with_evidence(s: str) -> Dict[str, Tuple[str,
 
     -> 
 
-    {
-        'percocet': ('discontinued', 'along with Percocet for breakthrough pain which was then switched to OxyContin IR'),
-        'gemzar': ('active', 'received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty'),
-        'oxycontin ir': ('active', 'along with Percocet for breakthrough pain which was then switched to OxyContin IR'),
-        'fentanyl': ('active', 'she was weaned off her PCA and started on a fentanyl patch'),
-    }
+    (
+        {
+            'percocet': 'discontinued',
+            'gemzar': 'active',
+            'oxycontin ir': 'active',
+            'fentanyl': 'active',
+        },
+        {
+            'percocet': 'along with Percocet for breakthrough pain which was then switched to OxyContin IR',
+            'gemzar': 'received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty',
+            'oxycontin ir': 'along with Percocet for breakthrough pain which was then switched to OxyContin IR',
+            'fentanyl': 'she was weaned off her PCA and started on a fentanyl patch',
+        }
+    )
     """
 
     s = s.replace('- ', '')
     s_list = s.split('\n')
     med_status_dict = {}
+    med_evidence_dict = {}
     for i, s in enumerate(s_list):
 
         # find second occurence of "
@@ -94,7 +103,8 @@ def parse_response_medication_list_with_evidence(s: str) -> Dict[str, Tuple[str,
 
         # add evidence
         evidence = s[idx2 + 1:].strip().strip(' "').lower()
-        med_status_dict[medication] = (status, evidence)
+        med_status_dict[medication] = status
+        med_evidence_dict[medication] = evidence
 
         # print(s, '**', s[:idx], '***', s[idx + 1:idx + 1 + idx2], '****', s[idx + 1 + idx2 + 1:])
-    return med_status_dict
+    return med_status_dict, med_evidence_dict
