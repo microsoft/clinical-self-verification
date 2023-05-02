@@ -132,13 +132,9 @@ if __name__ == '__main__':
     mets_dict = defaultdict(list)
     dfe = df.iloc[nums]
     medications_dict_list = [clin.parse.parse_response_medication_list(r['resps'][i]) for i in range(len(dfe))]
-    for i in range(len(dfe)):
-        # print(i)
-        mets = clin.eval.eval_med_extraction(medications_dict_list[i], dfe.iloc[i])
-        for k in mets.keys():
-            mets_dict[k].append(mets[k])
+    mets_dict = clin.eval.calculate_metrics(medications_dict_list, dfe)
     for k in mets_dict.keys():
-        r[k] = np.mean(mets_dict[k])
+        r[k] = mets_dict[k]
 
     # print metrics
     logging.info(f'precision: {r["precision"]}')

@@ -23,7 +23,8 @@ def _drop_dosage(med: str) -> str:
                 return ' '.join(med_words[:j])
         return med
 
-def parse_response_medication_list(s: str) -> Dict[str, str]:
+
+def parse_response_medication_list(s: str, lower=True) -> Dict[str, str]:
     """
     "Gatifloxacin" (initiated)
     - "Acyclovir" (prophylactic therapy through day 100)
@@ -48,7 +49,9 @@ def parse_response_medication_list(s: str) -> Dict[str, str]:
     for i, s in enumerate(s_list):
         # find second occurence of "
         idx = s.find('"', s.find('"') + 1)
-        medication = s[:idx].strip('"').lower().strip(' "')
+        medication = s[:idx].strip('"').strip(' "')
+        if lower:
+            medication = medication.lower()
 
         # clean up
         medication = _drop_dosage(medication)
@@ -58,7 +61,7 @@ def parse_response_medication_list(s: str) -> Dict[str, str]:
     return med_status_dict
 
 
-def parse_response_medication_list_with_evidence(s: str) -> Tuple[Dict[str, str]]:
+def parse_response_medication_list_with_evidence(s: str, lower=True) -> Tuple[Dict[str, str]]:
     """
     "Percocet" (discontinued) "along with Percocet for breakthrough pain which was then switched to OxyContin IR"
     - "Gemzar" (active) "received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty"
@@ -91,7 +94,9 @@ def parse_response_medication_list_with_evidence(s: str) -> Tuple[Dict[str, str]
 
         # find second occurence of "
         idx = s.find('"', s.find('"') + 1)
-        medication = s[:idx].strip('"').lower().strip(' "')
+        medication = s[:idx].strip('"').strip(' "')
+        if lower:
+            medication = medication.lower()
 
 
         # clean up
@@ -108,3 +113,27 @@ def parse_response_medication_list_with_evidence(s: str) -> Tuple[Dict[str, str]
 
         # print(s, '**', s[:idx], '***', s[idx + 1:idx + 1 + idx2], '****', s[idx + 1 + idx2 + 1:])
     return med_status_dict, med_evidence_dict
+
+
+def medication_dict_to_bullet_str(med_status_dict):
+    '''
+    Given a medication status dictionary, return a bulleted string
+    
+    Example
+    -------
+    {
+        'Percocet': 'discontinued',
+        'Gemzar': 'active',
+        'Oxycontin IR': 'active',
+        'Fentanyl': 'active',
+    }
+
+    ->
+
+    "Percocet" (discontinued)
+    - "Gemzar" (active)
+    - "Oxycontin IR" (active)
+    - "Fentanyl" (active)
+    '''
+    bulleted_str = ' ' + '\n- '.join([f'"{med}" ({status})' for med, status in med_status_dict.items()])
+    return bulleted_str

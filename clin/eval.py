@@ -25,6 +25,7 @@ def eval_med_extraction(
     return precision and recall
     """
     meds_retrieved = list(med_status_dict.keys())
+    meds_retrieved = [med.strip(' "').lower() for med in meds_retrieved]
     meds_true = (
         clin.prompts.str_to_list(df_row["active_medications"])
         + clin.prompts.str_to_list(df_row["discontinued_medications"])
@@ -33,15 +34,23 @@ def eval_med_extraction(
     meds_true = [med.strip(' "').lower() for med in meds_true]
 
     if verbose:
-        print(sorted(meds_retrieved))
-        print(sorted(meds_true))
-        print()
+        if "".join(sorted(meds_retrieved)) == "".join(sorted(meds_true)):
+            print("correct")
+        else:
+            print("ret", sorted(meds_retrieved))
+            print("grt", sorted(meds_true))
+            print()
 
     # compute precision and recall
-    precision = len(set(meds_retrieved).intersection(set(meds_true))) / len(
-        meds_retrieved
-    )
-    recall = len(set(meds_retrieved).intersection(set(meds_true))) / len(meds_true)
+    true_pos = len(set(meds_retrieved).intersection(set(meds_true)))
+    pred_pos = len(meds_retrieved)
+    gt_pos = len(meds_true)
+    if pred_pos == 0:
+        precision = 0
+        recall = 0
+    else:
+        recall = true_pos / gt_pos
+        precision = true_pos / pred_pos
     if precision + recall == 0:
         f1 = 0
     else:
@@ -53,17 +62,26 @@ def eval_med_extraction(
         "precision": precision,
         "recall": recall,
         "f1": f1,
+        "true_pos": true_pos,
+        "pred_pos": pred_pos,
+        "gt_pos": gt_pos,
     }
 
 
-def calculate_metrics(med_status_dicts: List, dfe: pd.DataFrame, verbose=False):
-    mets_dict = defaultdict(list)
+def calculate_metrics(med_status_dicts: List[Dict], dfe: pd.DataFrame, verbose=False):
+    mets_dict_per_example = defaultdict(list)
     for i in range(len(dfe)):
-        # print(i)
-        # medications_list_resp = clin.parse.parse_response_medication_list(r['resps'][i])
         mets = eval_med_extraction(med_status_dicts[i], dfe.iloc[i], verbose=verbose)
         for k in mets.keys():
-            mets_dict[k].append(mets[k])
+            mets_dict_per_example[k].append(mets[k])
+    rec = np.sum(mets_dict_per_example["true_pos"]) / np.sum(mets_dict_per_example["gt_pos"])
+    prec = np.sum(mets_dict_per_example["true_pos"]) / np.sum(mets_dict_per_example["pred_pos"])
+    
+    mets_dict = {
+        "recall": rec,
+        "precision": prec,
+        "f1": 2 * rec * prec / (rec + prec),
+    }
     return mets_dict
 
 
