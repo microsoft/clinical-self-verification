@@ -54,6 +54,12 @@ def add_main_args(parser):
         default="text-davinci-003",
         help="name of llm checkpoint",
     )
+    parser.add_argument(
+        "--checkpoint_verify",
+        type=str,  # choices=['gpt-4-0314', 'gpt-3.5-turbo', 'text-davinci-003',],
+        default="text-davinci-003",
+        help="name of llm checkpoint",
+    )
 
     # prompt args
     parser.add_argument("--n_shots", type=int, default=5, help="number of shots")
@@ -137,7 +143,7 @@ if __name__ == "__main__":
         clin.parse.parse_response_medication_list(extracted_strs_orig[i])
         for i in range(n)
     ]
-    llm_verify = clin.llm.get_llm("text-davinci-003")
+    llm_verify = clin.llm.get_llm(args.checkpoint_verify)
 
     ov = clin.modules.omission.OmissionVerifier()
     pv = clin.modules.prune.PruneVerifier()

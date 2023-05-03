@@ -40,18 +40,20 @@ Original: "fentanyl" (active)
 Evidence: "she was weaned off her PCA and started on a fentanyl patch"
 Revised: "fentanyl" (active)"""
 
-EX_0_ADDITION_TEXT = 'He does not want to take Celexa, so I put him back on Lexapro 2 mg p.o. q.d.'
-EX_0_ADDITION_LABEL = '''Original: "Lexapro" (active)
+EX_0_ADDITION_TEXT = (
+    "He does not want to take Celexa, so I put him back on Lexapro 2 mg p.o. q.d."
+)
+EX_0_ADDITION_LABEL = """Original: "Lexapro" (active)
 Evidence: "I put him back on Lexapro 2 mg p.o. q.d."
 Revised: "Lexapro" (active)
 
 Original: "Celexa" (discontinued)
 Evidence: "He does not want to take Celexa"
-Revised: "Celexa" (neither)'''
+Revised: "Celexa" (neither)"""
 
 EX_0_NEG = f"""Patient Note
 ------------
-_%#NAME#%_ tolerated his chemotherapy well with minimal nausea and no emesis. At the time of discharge, he was in no apparent distress and was afebrile. He went home with daily doses of 6 MP which they plan to crush, at home, to help swallowing. Also at the time of his discharge he was switched from dapsone to Bactrim, which was also to be crushed and mixed in with his food for PCP prophylaxis. {EX_0_ADDITION_TEXT}
+_%#NAME#%_ tolerated his chemotherapy well with minimal nausea and no emesis. At the time of discharge, he was in no apparent distress and was afebrile. Also at the time of his discharge he was switched from dapsone to Bactrim, which was also to be crushed and mixed in with his food for PCP prophylaxis. {EX_0_ADDITION_TEXT}
 
 Original: "dapsone" (discontinued)
 Evidence: "he was switched from dapsone to Bactrim"
@@ -60,10 +62,6 @@ Revised: "dapsone" (discontinued)
 Original: "Bactrim" (active)
 Evidence: "he was switched from dapsone to Bactrim"
 Revised: "Bactrim" (active)
-
-Original: "6 MP" (active)
-Evidence: "he went home with daily doses of 6 MP"
-Revised: "6 MP" (active)
 
 {EX_0_ADDITION_LABEL}"""
 
@@ -103,6 +101,12 @@ Revised: "Zosyn" (active)"""
 EXS_POS = [EX_1_POS, EX_0_POS]
 EXS_NEG = [EX_0_NEG, EX_2_NEG, EX_3_NEG]
 
+PROMPT_V1 = f"""Check the status of each medication found in the patient note (active, discontinued, or neither). Use the patient note and the extracted evidence to revise the medication's status if necessary. If the medication status is not clearly active or discontinued, set it to "neither"."""
+PROMPT_V2 = f"""Revise the status of each medication, based on the patient note and the extracted evidence. The status should be active, discontinued, or neither. If the medication status is not clearly active or discontinued, revise it to neither."""
+PROMPT_V3 = f"""Revise the status of each medication, based on the patient note and the extracted evidence snippet. The status should be active, discontinued, or neither. If the evidence does not very clearly show that status is active or discontinued, revise it to neither."""
+PROMPT_V4 = f"""Revise the status of each medication, based on the patient note and the extracted evidence snippet. The status should be active, discontinued, or neither. If the evidence does not show that status is clearly active or discontinued, revise it to neither."""
+# + # 'Only change the status if the evidence clearly warrants a change.'
+
 
 class StatusVerifier:
     def __init__(self, n_shots_pos=0, n_shots_neg=1):
@@ -111,14 +115,14 @@ class StatusVerifier:
         exs_pos = EXS_POS[: self.n_shots_pos]
         exs_neg = EXS_NEG[: self.n_shots_neg]
         exs = exs_pos + exs_neg
-        self.prompt = (
-            f"""Check the status of each medication found in the patient note (active, discontinued, or neither). Use the patient note and the extracted evidence to revise the medication's status if necessary. Only change the status if the evidence clearly warrants a change."""
-            + "\n\n"
-            + "\n\n\n".join(exs)
-        )
+        self.prompt = PROMPT_V4 + "\n\n" + "\n\n\n".join(exs)
 
     def __call__(
-        self, snippet, med_status_dict, med_evidence_dict, llm,
+        self,
+        snippet,
+        med_status_dict,
+        med_evidence_dict,
+        llm,
         verbose=False,
     ) -> Tuple[Dict[str, str]]:
         prompt_intro = (
@@ -131,6 +135,7 @@ class StatusVerifier:
 """
         )
         meds = list(med_status_dict.keys())
+        med_status_dict_revised = {}
         for med in meds:
             prompt_ex = (
                 prompt_intro
@@ -139,19 +144,26 @@ Evidence: "{med_evidence_dict[med]}"
 Revised:"""
             )
 
-            med_and_status_revised = llm(prompt_ex, stop='\n')
+            med_and_status_revised = llm(prompt_ex, stop="\n")
             status = clin.parse.parse_medication_and_status_to_status(
                 med_and_status_revised
             )
             if verbose:
-                print('PROMPT', repr(prompt_ex))
-                print('RESP', repr(med_and_status_revised))
-                print('STATUS', status)
+                print("PROMPT", repr(prompt_ex))
+                print("RESP", repr(med_and_status_revised))
+                # print("STATUS", status)
+                if not status == med_status_dict[med]:
+                    print('***status changed from', med_status_dict[med], 'to', status)
                 print()
-            if status in ["active", "discontinued", "neither"]:
-                med_status_dict[med] = status
+            
 
-        return med_status_dict
+            # make new dict (don't revise if it already predicted neither, since that's kind of rare)
+            if status in ["active", "discontinued", "neither"] and not med_status_dict[med] == 'neither':
+                med_status_dict_revised[med] = status
+            else:
+                med_status_dict_revised[med] = med_status_dict[med]
+
+        return med_status_dict_revised
 
 
 if __name__ == "__main__":
@@ -167,14 +179,9 @@ if __name__ == "__main__":
     med_status_dict = {
         "ativan": "active",
         "inderal la": "active",
-        "celexa": "discontinued",
-        "lexapro": "discontinued", # should be active
+        "celexa": "discontinued",  # should be neither
+        "lexapro": "discontinued",  # should be active
     }
     llm = clin.llm.get_llm("text-davinci-003")
-    med_status_dict = v(
-        snippet,
-        med_status_dict,
-        med_evidence_dict,
-        llm,
-    )
+    med_status_dict = v(snippet, med_status_dict, med_evidence_dict, llm, verbose=True)
     print(med_status_dict)

@@ -81,7 +81,7 @@ def calculate_metrics(med_status_dicts: List[Dict[str, str]], dfe: pd.DataFrame,
     return mets_dict
 
 
-def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame):
+def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame, verbose=False):
     """Compute the metrics for medication status,
     conditioned on the medications that are retrieved by all models and are valid medications in the groundtruth
     """
@@ -114,7 +114,7 @@ def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], df
             return "neither"
         else:
             return None
-    common_meds_status_dict = [
+    common_meds_status_gt_dict = [
         {
             med: _get_status_of_med(dfe.iloc[i], med)
             for med in common_meds[i]
@@ -124,6 +124,7 @@ def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], df
     ]
 
     # compute conditional accuracy for all rows
+    print('comp')
     accs_cond = []
     f1s_macro_cond = []
     for i in tqdm(range(n_runs_to_compare)):
@@ -131,9 +132,12 @@ def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], df
         status_gt_list = []
         for j in range(n):
             med_status_dict = _convert_keys_to_lowercase([med_status_dicts_list[i][j]])[0]
-            for med in common_meds_status_dict[j]:
+            for med in common_meds_status_gt_dict[j]:
                 status_extracted_list.append(med_status_dict[med])
-                status_gt_list.append(common_meds_status_dict[j][med])
+                status_gt_list.append(common_meds_status_gt_dict[j][med])
+                if verbose:
+                    if not med_status_dict[med] == common_meds_status_gt_dict[j][med]:
+                        print('med', med, '\n\t', 'pred\t', med_status_dict[med], '\n\t', 'gt\t',common_meds_status_gt_dict[j][med])
         accs_cond.append(np.mean(np.array(status_extracted_list) == np.array(status_gt_list)))
         f1s_macro_cond.append(
             sklearn.metrics.f1_score(status_gt_list, status_extracted_list, average="macro")

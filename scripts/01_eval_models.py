@@ -12,7 +12,7 @@ params_shared_dict = {
     'save_dir': [join(repo_dir, 'results')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
     'n_shots': [1, 5], # [1, 5, 10]
-    'checkpoint': ['gpt-4-0314', 'gpt-3.5-turbo', 'text-davinci-003'],
+    'checkpoint': ['gpt-4-0314', 'text-davinci-003'], # gpt-3.5-turbo
 }
 
 # List of tuples to sweep over (these values are coupled, and swept over together)
