@@ -188,7 +188,7 @@ class EvidenceVerifier:
         # print(exs.shape)
         # print(exs[0])
         self.prompt = f"""Verify whether each extracted medication is present in the patient note in a bulleted list.
-If it is present, extract the span of text from the patient note as evidence. If it is not clearly present, write "{NO_EVIDENCE}".""" + '\n\n' + '\n\n\n'.join(exs)
+If it is present, extract the span of text from the patient note as evidence. If it is not clearly present, write "{NO_EVIDENCE}". Write a bullet for every extracted medication.""" + '\n\n' + '\n\n\n'.join(exs)
 
     def __call__(self, snippet, bulleted_str, llm) -> Tuple[Dict[str, str]]:
         prompt_ex = self.prompt + '\n\n\n' + f'''Patient Note

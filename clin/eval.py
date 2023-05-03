@@ -41,30 +41,16 @@ def eval_med_extraction(
             print("grt", sorted(meds_true))
             print()
 
-    # compute precision and recall
     true_pos = len(set(meds_retrieved).intersection(set(meds_true)))
     pred_pos = len(meds_retrieved)
     gt_pos = len(meds_true)
-    if pred_pos == 0:
-        precision = 0
-        recall = 0
-    else:
-        recall = true_pos / gt_pos
-        precision = true_pos / pred_pos
-    if precision + recall == 0:
-        f1 = 0
-    else:
-        f1 = 2 * precision * recall / (precision + recall)
-    # tp = len(set(meds_retrieved).intersection(set(meds_true)))
-    # fp = len(set(meds_retrieved).difference(set(meds_true)))
-    # fn = len(set(meds_true).difference(set(meds_retrieved)))
     return {
-        "precision": precision,
-        "recall": recall,
-        "f1": f1,
         "true_pos": true_pos,
         "pred_pos": pred_pos,
         "gt_pos": gt_pos,
+
+        'fp_list': list(set(meds_retrieved) - set(meds_true)),
+        'fn_list': list(set(meds_true) - set(meds_retrieved)),
     }
 
 
@@ -77,6 +63,10 @@ def calculate_metrics(med_status_dicts: List[Dict], dfe: pd.DataFrame, verbose=F
     rec = np.sum(mets_dict_per_example["true_pos"]) / np.sum(mets_dict_per_example["gt_pos"])
     prec = np.sum(mets_dict_per_example["true_pos"]) / np.sum(mets_dict_per_example["pred_pos"])
     
+    if verbose:
+        print('fp', sum(mets_dict_per_example['fp_list'], []))
+        print('fn', sum(mets_dict_per_example['fn_list'], []))
+
     mets_dict = {
         "recall": rec,
         "precision": prec,
@@ -105,7 +95,6 @@ def eval_medication_status(dfe: pd.DataFrame, r: pd.DataFrame):
                 common_meds[j].intersection(set(med_status_dicts[j].keys()))
                 for j in range(n)
             ]
-    common_meds
 
     # add status and only keep medications that are present in the groundtruth
     def _get_status_of_med(row, med):

@@ -47,6 +47,8 @@ def parse_response_medication_list(s: str, lower=True) -> Dict[str, str]:
     s_list = s.split('\n')
     med_status_dict = {}
     for i, s in enumerate(s_list):
+        if s.lower().strip('-" ').startswith("non"):
+            break
         # find second occurence of "
         idx = s.find('"', s.find('"') + 1)
         medication = s[:idx].strip('"').strip(' "')
