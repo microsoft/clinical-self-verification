@@ -24,7 +24,7 @@ def _drop_dosage(med: str) -> str:
         return med
 
 
-def parse_response_medication_list(s: str, lower=True) -> Dict[str, str]:
+def parse_response_medication_list(s: str, with_status=True, lower=True) -> Dict[str, str]:
     """
     "Gatifloxacin" (initiated)
     - "Acyclovir" (prophylactic therapy through day 100)
@@ -41,6 +41,8 @@ def parse_response_medication_list(s: str, lower=True) -> Dict[str, str]:
         'systemic steroids': 'weaned',
         'cyclosporin': 'discontinued',
     }
+
+    Note: ends early if it encounters "None" in the list
     """
 
     s = s.replace('- ', '')
@@ -58,8 +60,11 @@ def parse_response_medication_list(s: str, lower=True) -> Dict[str, str]:
         # clean up
         medication = _drop_dosage(medication)
 
-        status = s[idx + 1:].strip().strip('()').lower()
-        med_status_dict[medication] = status
+        if with_status:
+            status = s[idx + 1:].strip().strip('()').lower()
+            med_status_dict[medication] = status
+        else:
+            med_status_dict[medication] = None
     return med_status_dict
 
 
