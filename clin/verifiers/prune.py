@@ -99,8 +99,46 @@ Potential Medications:
 -{bulleted_str}
 
 Non-medications:
--"""
+-""" # 0.927	0.909	0.945
 
+
+PROMPT_V6 = """Return each element in the Potential Medications list which is not clearly a medication name.
+Examples of elements which are not medication names are symptoms or procedures, such as "Infection", "Fever", "Biopsy", "Protocol", "Accu-Cheks", "I.V. Fluids", "Inhaler", or "Hypertension".
+If no non-verified medications are found, return "None".
+
+Potential Medications:
+- "dapsone"
+- "Bactrim"
+- "6 MP"
+
+Non-medications:
+- "None"
+
+Potential Medications:
+- "Percocet"
+- "Gemzar"
+- "Accu-Chek"
+- "Fever"
+
+Non-medications:
+- "Accu-Chek"
+- "Fever"
+
+Potential Medications:
+- "Timentin" 
+- "vancomycin"
+- "IVF"
+- "sliding scale"
+
+Non-medications:
+- "IVF"
+- "sliding scale"
+
+Potential Medications:
+-{bulleted_str}
+
+Non-medications:
+-""" # 0.927	0.909	0.945
 
 
 
@@ -111,7 +149,7 @@ class PruneVerifier:
     def __init__(self):
         self.prompt = PROMPT_V5
 
-    def __call__(self, snippet, bulleted_str, llm, verbose=False, lower=True) -> Tuple[Dict[str, str]]:
+    def __call__(self, snippet, bulleted_str, llm, verbose=False, lower=True, remove_len_2=False) -> Tuple[Dict[str, str]]:
         med_status_dict_init = clin.parse.parse_response_medication_list(bulleted_str, lower=False)
         bulleted_str_med_only = ' ' + '\n- '.join([f'"{med}"' for med in med_status_dict_init.keys()])
         prompt_ex = self.prompt.format(snippet=snippet, bulleted_str=bulleted_str_med_only)
@@ -127,6 +165,10 @@ class PruneVerifier:
 
         # remove meds that are not in the snippet (this has no effect)
         med_status_dict = {med: med_status_dict[med] for med in med_status_dict if med.lower() in snippet.lower()}
+
+        # remove meds that are too short
+        if remove_len_2:
+            med_status_dict = {med: med_status_dict[med] for med in med_status_dict if len(med) > 2}
 
         if verbose:
             print(prompt_ex, end='')
