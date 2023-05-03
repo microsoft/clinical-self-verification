@@ -102,47 +102,6 @@ Non-medications:
 -""" # 0.927	0.909	0.945
 
 
-PROMPT_V6 = """Return each element in the Potential Medications list which is not clearly a medication name.
-Examples of elements which are not medication names are symptoms or procedures, such as "Infection", "Fever", "Biopsy", "Protocol", "Accu-Cheks", "I.V. Fluids", "Inhaler", or "Hypertension".
-If no non-verified medications are found, return "None".
-
-Potential Medications:
-- "dapsone"
-- "Bactrim"
-- "6 MP"
-
-Non-medications:
-- "None"
-
-Potential Medications:
-- "Percocet"
-- "Gemzar"
-- "Accu-Chek"
-- "Fever"
-
-Non-medications:
-- "Accu-Chek"
-- "Fever"
-
-Potential Medications:
-- "Timentin" 
-- "vancomycin"
-- "IVF"
-- "sliding scale"
-
-Non-medications:
-- "IVF"
-- "sliding scale"
-
-Potential Medications:
--{bulleted_str}
-
-Non-medications:
--""" # 0.927	0.909	0.945
-
-
-
-
 
 
 class PruneVerifier:

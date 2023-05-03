@@ -36,7 +36,7 @@ def eval_med_extraction(
     if verbose:
         if "".join(sorted(meds_retrieved)) == "".join(sorted(meds_true)):
             print("correct")
-            print("grt", sorted(meds_true))
+            # print("grt", sorted(meds_true))
         else:
             print("ret", sorted(meds_retrieved))
             print("grt", sorted(meds_true))

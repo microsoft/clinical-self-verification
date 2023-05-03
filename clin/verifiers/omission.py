@@ -76,11 +76,52 @@ Missed medications
 ------------------
 -"""
 
+PROMPT_V4 = """List all medication names in the patient note that were missed in Extracted medications list. Put the medication name in quotes and the status in parentheses (active, discontinued, or neither). If no additional medications are found, return "None".
+
+Patient Note
+------------
+5. Prozac 60 mg daily by mouth. 6. Regular insulin sliding scale as follows: 150 to 200 3 units, 201 to 250 6 units, 251 to 300 8 units, 301 to 351 10 units, 351 to 400 12 units, greater than 400 call the M.D. or NP. 7. Lantus insulin 6 units q.p.m. now being given at 1800. 8. Zosyn 3.375 gm IV q.6 h. which we will continue through the _%#DD#%_ then discontinue.
+
+Extracted medications
+---------------------
+- "insulin" (active)
+
+Missed medications
+------------------
+- "Prozac" (active)
+- "Lantus insulin" (active)
+- "Zosyn" (active)
+
+Patient Note
+------------
+_%#NAME#%_ tolerated his chemotherapy well with minimal nausea and no emesis. At the time of discharge, he was in no apparent distress and was afebrile. He went home with daily doses of 6 MP which they plan to crush, at home, to help swallowing. Also at the time of his discharge he was switched from dapsone to Bactrim, which was also to be crushed and mixed in with his food for PCP prophylaxis.
+
+Extracted medications
+---------------------
+- "dapsone" (discontinued)
+
+Missed medications
+------------------
+- "Bactrim" (active)
+- "6 MP" (active)
+
+Patient Note
+------------
+{snippet}
+
+Extracted medications
+---------------------
+-{bulleted_str}
+
+Missed medications
+------------------
+-"""
+
 
 
 class OmissionVerifier:
     def __init__(self):
-        self.prompt = PROMPT_V3
+        self.prompt = PROMPT_V4
 
     def __call__(self, snippet, bulleted_str, llm, verbose=False, lower=True) -> Tuple[Dict[str, str]]:
         prompt_ex = self.prompt.format(snippet=snippet, bulleted_str=bulleted_str)
