@@ -12,8 +12,25 @@ import openai
 import numpy as np
 from typing import List, Dict, Tuple
 from collections import defaultdict
-import clin.prompts
 import sklearn.metrics
+
+def str_to_list(s):
+    # converts a list formatted as a string back to a list
+    l = s.replace('[', '').replace(']', '').split(',')
+    l = [val.strip() for val in l]
+    if l == ['']:
+        return []
+    else:
+        return l
+
+def list_medications(row) -> str:
+        d = [('active', val) for val in str_to_list(row['active_medications'])] + \
+            [('discontinued', val) for val in str_to_list(row['discontinued_medications'])] + \
+            [('neither', val) for val in str_to_list(row['neither_medications'])]
+        np.random.default_rng(seed=13).shuffle(d)
+        # print(d)
+        s = '- ' + '\n- '.join([f'{med} ({status})' for status, med in d])
+        return s
 
 def _drop_dosage(med: str) -> str:
         # if first word is numeric, can be okay (this case is for "6 mp")
@@ -130,6 +147,13 @@ def parse_response_medication_list_with_evidence(s: str, lower=True) -> Tuple[Di
         # print(s, '**', s[:idx], '***', s[idx + 1:idx + 1 + idx2], '****', s[idx + 1 + idx2 + 1:])
     return med_status_dict, med_evidence_dict
 
+def parse_medication_and_status_to_status(medication_and_status: str) -> str:
+    """
+    Example
+    -------
+    "Lantus insulin" (active)\n -> "active"
+    """
+    return medication_and_status.split('\n')[0].split('(')[-1].strip(')')
 
 def medication_dict_to_bullet_str(med_status_dict):
     '''

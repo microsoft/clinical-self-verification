@@ -12,7 +12,6 @@ import openai
 import numpy as np
 from typing import List, Dict
 from collections import defaultdict
-import clin.prompts
 import clin.parse
 import sklearn.metrics
 
@@ -27,9 +26,9 @@ def eval_med_extraction(
     meds_retrieved = list(med_status_dict.keys())
     meds_retrieved = [med.strip(' "').lower() for med in meds_retrieved]
     meds_true = (
-        clin.prompts.str_to_list(df_row["active_medications"])
-        + clin.prompts.str_to_list(df_row["discontinued_medications"])
-        + clin.prompts.str_to_list(df_row["neither_medications"])
+        clin.parse.str_to_list(df_row["active_medications"])
+        + clin.parse.str_to_list(df_row["discontinued_medications"])
+        + clin.parse.str_to_list(df_row["neither_medications"])
     )
     meds_true = [med.strip(' "').lower() for med in meds_true]
 
@@ -55,7 +54,7 @@ def eval_med_extraction(
     }
 
 
-def calculate_metrics(med_status_dicts: List[Dict], dfe: pd.DataFrame, verbose=False):
+def calculate_metrics(med_status_dicts: List[Dict[str, str]], dfe: pd.DataFrame, verbose=False):
     mets_dict_per_example = defaultdict(list)
     for i in range(len(dfe)):
         mets = eval_med_extraction(med_status_dicts[i], dfe.iloc[i], verbose=verbose)
@@ -76,18 +75,23 @@ def calculate_metrics(med_status_dicts: List[Dict], dfe: pd.DataFrame, verbose=F
     return mets_dict
 
 
-def eval_medication_status(dfe: pd.DataFrame, r: pd.DataFrame):
+def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame):
     """Compute the metrics for medication status,
     conditioned on the medications that are retrieved by all models and are valid medications in the groundtruth
     """
+    
+
     # get the common retrieved medications for each row by all models
+    n_runs_to_compare = len(med_status_dicts_list)
+    n = len(dfe)
     common_meds = []
-    for i in range(len(r)):
-        resps = r.iloc[i]["resps"]
-        n = len(resps)
-        med_status_dicts = [
-            clin.parse.parse_response_medication_list(resps[j]) for j in range(n)
-        ]
+    for i in range(n_runs_to_compare):
+        # resps = r.iloc[i]["resps"]
+        # n = len(resps)
+        # med_status_dicts = [
+            # clin.parse.parse_response_medication_list(resps[j]) for j in range(n)
+        # ]
+        med_status_dicts = med_status_dicts_list[i]
 
         if i == 0:
             common_meds = [set(med_status_dicts[j].keys()) for j in range(n)]
@@ -120,12 +124,14 @@ def eval_medication_status(dfe: pd.DataFrame, r: pd.DataFrame):
     # compute conditional accuracy for all rows
     accs_cond = []
     f1s_macro_cond = []
-    for i in tqdm(range(len(r))):
-        resps = r.iloc[i]["resps"]
+    for i in tqdm(range(n_runs_to_compare)):
+        # resps = r.iloc[i]["resps"]
         status_resp_list = []
         status_list = []
-        for j in range(len(resps)):
-            med_status_dict = clin.parse.parse_response_medication_list(resps[j])
+        for j in range(n):
+            med_status_dict = med_status_dicts_list[i][j]
+        # for j in range(len(resps)):
+            # med_status_dict = clin.parse.parse_response_medication_list(resps[j])
             for med in common_meds_status_dict[j]:
                 status_resp_list.append(med_status_dict[med])
                 status_list.append(common_meds_status_dict[j][med])

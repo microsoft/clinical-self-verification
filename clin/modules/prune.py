@@ -63,7 +63,7 @@ Non-medications:
 -"""
 
 
-PROMPT_V5 = """Return each element in the Potential Medications list which is not very clearly a medication name.
+PROMPT_V5 = """Return each element in the Potential Medications list which is not clearly a specific medication name.
 Examples of elements which are not medication names are symptoms or procedures, such as "Infection", "Fever", "Biopsy", "Protocol", "Accu-Cheks", "I.V. Fluids", "Inhaler", or "Hypertension".
 If no non-verified medications are found, return "None".
 

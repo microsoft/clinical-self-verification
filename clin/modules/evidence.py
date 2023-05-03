@@ -50,7 +50,7 @@ Extracted medications
 
 Evidence
 --------
-- "Timentin" (discontinued) "This was treated with a course of Timentin"
+- "Timentin" (discontinued) "patient did complete a course of Timentin. This was discontinued"
 - "vancomycin" (active) "started on a course of vancomycin"'''
 
 EX_WITH_EVIDENCE_3 = '''Patient Note
@@ -176,19 +176,22 @@ Evidence
 EXS_POS = [EX_WITH_EVIDENCE_0, EX_WITH_EVIDENCE_1, EX_WITH_EVIDENCE_2, EX_WITH_EVIDENCE_3, EX_WITH_EVIDENCE_4]
 EXS_NEG = [EX_WITH_EVIDENCE_ADDED_0, EX_WITH_EVIDENCE_ADDED_1, EX_WITH_EVIDENCE_ADDED_2, EX_WITH_EVIDENCE_ADDED_3, EX_WITH_EVIDENCE_ADDED_4]
 
+
+
+PROMPT_V1 = f"""Verify whether each extracted medication is present in the patient note in a bulleted list.
+If it is present, extract the span of text from the patient note as evidence. If it is not clearly present, write "{NO_EVIDENCE}". Write a bullet for every extracted medication."""
+
+PROMPT_V2 = f"""Find the span of text which corresponds to each extracted medication and its status. If no evidence is found, write "{NO_EVIDENCE}". Write a bullet for every extracted medication."""
+
+
 class EvidenceVerifier:
-    def __init__(self, n_shots_pos=1, n_shots_neg=2, seed=13):
-        self.n_shots_pos = n_shots_neg
-        self.n_shots_neg = n_shots_neg
-        rng = np.random.default_rng(seed=seed)
-        exs_pos = rng.choice(EXS_POS, size=n_shots_pos, replace=False)
-        exs_neg = rng.choice(EXS_NEG, size=n_shots_neg, replace=False)
-        exs = np.concatenate((exs_pos, exs_neg))
-        rng.shuffle(exs)
+    def __init__(self, n_shots_pos=1, n_shots_neg=1):
+        exs_pos = EXS_POS[: n_shots_pos]
+        exs_neg = EXS_NEG[-n_shots_neg:]
+        exs = exs_pos + exs_neg
         # print(exs.shape)
         # print(exs[0])
-        self.prompt = f"""Verify whether each extracted medication is present in the patient note in a bulleted list.
-If it is present, extract the span of text from the patient note as evidence. If it is not clearly present, write "{NO_EVIDENCE}". Write a bullet for every extracted medication.""" + '\n\n' + '\n\n\n'.join(exs)
+        self.prompt = PROMPT_V2 + '\n\n' + '\n\n\n'.join(exs)
 
     def __call__(self, snippet, bulleted_str, llm) -> Tuple[Dict[str, str]]:
         prompt_ex = self.prompt + '\n\n\n' + f'''Patient Note
@@ -204,6 +207,11 @@ Evidence
 -'''
         meds_with_evidence_str = llm(prompt_ex)
         med_status_dict, med_evidence_dict  = clin.parse.parse_response_medication_list_with_evidence(meds_with_evidence_str)
+        # prune if no evidence
+        med_status_dict = {
+            k: v for k, v in med_status_dict.items()
+            if not med_evidence_dict[k] == 'no evidence'
+        }
         return med_status_dict, med_evidence_dict
 
 if __name__ == '__main__':

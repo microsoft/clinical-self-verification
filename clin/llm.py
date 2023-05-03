@@ -21,11 +21,13 @@ import openai
 from langchain.llms.base import LLM
 import hashlib
 import torch
+import time
+
 # from mprompt.config import CACHE_DIR
-CACHE_DIR = '/home/chansingh/clin/CACHE_OPENAI'
+CACHE_DIR = "/home/chansingh/clin/CACHE_OPENAI"
+LLM_REPEAT_DELAY = 1  # how long to wait before recalling a failed llm call
 
 # repo_dir = join(dirname(dirname(__file__)))
-# langchain.llm_cache = InMemoryCache()
 
 
 def get_llm(checkpoint):
@@ -37,12 +39,37 @@ def get_llm(checkpoint):
         return llm_hf(checkpoint)
 
 
+def repeatedly_call_with_delay(llm_call, delay=LLM_REPEAT_DELAY):
+    """
+    delay: float
+        Number of seconds to wait between calls (None will not repeat)
+    """
+    if delay is None:
+        return llm_call
+
+    def wrapper(*args, **kwargs):
+        response = None
+        while response is None:
+            try:
+                response = llm_call(*args, **kwargs)
+
+                # fix for when this function was returning response rather than string
+                if response is not None and not isinstance(response, str):
+                    response = response["choices"][0]["message"]["content"]
+            except:
+                time.sleep(delay)
+        return response
+
+    return wrapper
+
+
 def llm_openai(checkpoint="text-davinci-003") -> LLM:
     class LLM_OpenAI:
         def __init__(self, checkpoint, cache_dir=join(CACHE_DIR, "cache_openai")):
             self.checkpoint = checkpoint
             self.cache_dir = cache_dir
 
+        @repeatedly_call_with_delay
         def __call__(self, prompt: str, max_new_tokens=250, seed=1, do_sample=True):
             # cache
             os.makedirs(self.cache_dir, exist_ok=True)
@@ -87,6 +114,7 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
             self.checkpoint = checkpoint
             self.cache_dir = cache_dir
 
+        @repeatedly_call_with_delay
         def __call__(
             self,
             prompts_list: List[Dict[str, str]],
@@ -147,7 +175,7 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
             )
 
             pkl.dump(response, open(cache_file_raw, "wb"))
-            return response['choices'][0]['message']['content']
+            return response["choices"][0]["message"]["content"]
 
     return LLM_Chat(checkpoint)
 

@@ -11,7 +11,7 @@ params_shared_dict = {
     'seed': [1],
     'save_dir': [join(repo_dir, 'results')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
-    'n_shots': [1, 5], # 10
+    'n_shots': [1, 5], # [1, 5, 10]
     'checkpoint': ['gpt-4-0314', 'gpt-3.5-turbo', 'text-davinci-003'],
 }
 
