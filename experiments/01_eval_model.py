@@ -176,7 +176,6 @@ if __name__ == "__main__":
             dfe.iloc[i]["snippet"],
             bulleted_str=extracted_strs_orig[i],
             llm=llm_verify,
-            lower=False,
         )
         for i in tqdm(range(n))
     ]
@@ -190,7 +189,6 @@ if __name__ == "__main__":
             dfe.iloc[i]["snippet"],
             bulleted_str=bulleted_str_list_ov_[i],
             llm=llm_verify,
-            lower=False,
         )
         for i in tqdm(range(n))
     ]

@@ -41,7 +41,7 @@ def _drop_dosage(med: str) -> str:
         return med
 
 
-def parse_response_medication_list(s: str, with_status=True, lower=True) -> Dict[str, str]:
+def parse_response_medication_list(s: str, with_status=True, lower=False) -> Dict[str, str]:
     """
     "Gatifloxacin" (initiated)
     - "Acyclovir" (prophylactic therapy through day 100)
@@ -94,7 +94,7 @@ def parse_response_medication_list(s: str, with_status=True, lower=True) -> Dict
     return med_status_dict
 
 
-def parse_response_medication_list_with_evidence(s: str, lower=True) -> Tuple[Dict[str, str]]:
+def parse_response_medication_list_with_evidence(s: str, lower=False) -> Tuple[Dict[str, str]]:
     """
     "Percocet" (discontinued) "along with Percocet for breakthrough pain which was then switched to OxyContin IR"
     - "Gemzar" (active) "received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty"

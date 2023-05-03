@@ -123,15 +123,14 @@ class OmissionVerifier:
     def __init__(self):
         self.prompt = PROMPT_V4
 
-    def __call__(self, snippet, bulleted_str, llm, verbose=False, lower=True) -> Tuple[Dict[str, str]]:
+    def __call__(self, snippet, bulleted_str, llm, verbose=False) -> Tuple[Dict[str, str]]:
         prompt_ex = self.prompt.format(snippet=snippet, bulleted_str=bulleted_str)
         med_str_after_verification_and_deduplication = llm(prompt_ex)
-        # med_status_dict_init = clin.parse.parse_response_medication_list(bulleted_str, lower=lower)
         if verbose:
             print(prompt_ex, end='')
             print('<START>' + med_str_after_verification_and_deduplication + '<END>')
-        med_status_dict  = clin.parse.parse_response_medication_list(med_str_after_verification_and_deduplication, lower=lower)
-        med_status_dict_init = clin.parse.parse_response_medication_list(bulleted_str, lower=lower)
+        med_status_dict  = clin.parse.parse_response_medication_list(med_str_after_verification_and_deduplication)
+        med_status_dict_init = clin.parse.parse_response_medication_list(bulleted_str)
         return med_status_dict_init | med_status_dict
 
 if __name__ == '__main__':

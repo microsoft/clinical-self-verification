@@ -108,18 +108,17 @@ class PruneVerifier:
     def __init__(self):
         self.prompt = PROMPT_V5
 
-    def __call__(self, snippet, bulleted_str, llm, verbose=False, lower=True, remove_len_2=False) -> Tuple[Dict[str, str]]:
-        med_status_dict_init = clin.parse.parse_response_medication_list(bulleted_str, lower=False)
+    def __call__(self, snippet, bulleted_str, llm, verbose=False, remove_len_2=False) -> Tuple[Dict[str, str]]:
+        med_status_dict_init = clin.parse.parse_response_medication_list(bulleted_str)
         bulleted_str_med_only = ' ' + '\n- '.join([f'"{med}"' for med in med_status_dict_init.keys()])
         prompt_ex = self.prompt.format(snippet=snippet, bulleted_str=bulleted_str_med_only)
         med_str_after_pruning = llm(prompt_ex)
         
         # remove meds that are in the returned list
-        med_keys = clin.parse.parse_response_medication_list(med_str_after_pruning, with_status=False, lower=True)
-        med_status_dict_init = {med.lower(): med_status_dict_init[med] for med in med_status_dict_init.keys()}
+        med_keys_lower = clin.parse.parse_response_medication_list(med_str_after_pruning, with_status=False, lower=True)
         med_status_dict = {
             med: med_status_dict_init[med] for med in med_status_dict_init
-            if not med in med_keys
+            if not med.lower() in med_keys_lower
         }
 
         # remove meds that are not in the snippet (this has no effect)
@@ -132,7 +131,7 @@ class PruneVerifier:
         if verbose:
             print(prompt_ex, end='')
             print('<START>' + med_str_after_pruning + '<END>')
-            print('ks', med_status_dict_init.keys(), med_keys, f'removed {len(med_status_dict_init) - len(med_status_dict)} keys')
+            print('ks', med_status_dict_init.keys(), med_keys_lower, f'removed {len(med_status_dict_init) - len(med_status_dict)} keys')
         return med_status_dict
 
 if __name__ == '__main__':

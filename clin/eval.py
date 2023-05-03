@@ -15,14 +15,18 @@ from collections import defaultdict
 import clin.parse
 import sklearn.metrics
 
+# Note: none of the evaluation functions should be case sensitive
 
 def eval_med_extraction(
-    med_status_dict: Dict[str, str], df_row: pd.Series, verbose=False
+    med_status_dict: Dict[str, str],
+    df_row: pd.Series, verbose=False
 ) -> List[bool]:
     """
     Given a dictionary of medication status, and a row of the dataframe,
     return precision and recall
     """
+
+    # strip and convert everything to lowercase
     meds_retrieved = list(med_status_dict.keys())
     meds_retrieved = [med.strip(' "').lower() for med in meds_retrieved]
     meds_true = (
@@ -32,6 +36,7 @@ def eval_med_extraction(
     )
     meds_true = [med.strip(' "').lower() for med in meds_true]
 
+    # print things
     if verbose:
         if "".join(sorted(meds_retrieved)) == "".join(sorted(meds_true)):
             print("correct")
@@ -41,6 +46,7 @@ def eval_med_extraction(
             print("grt", sorted(meds_true))
             print()
 
+    # calculate actual metrics
     true_pos = len(set(meds_retrieved).intersection(set(meds_true)))
     pred_pos = len(meds_retrieved)
     gt_pos = len(meds_true)
@@ -79,19 +85,16 @@ def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], df
     """Compute the metrics for medication status,
     conditioned on the medications that are retrieved by all models and are valid medications in the groundtruth
     """
-    
+    def _convert_keys_to_lowercase(dicts_list):
+        return [{k.lower(): dicts_list[j][k] for k in dicts_list[j]} for j in range(len(dicts_list))]
+
 
     # get the common retrieved medications for each row by all models
     n_runs_to_compare = len(med_status_dicts_list)
     n = len(dfe)
     common_meds = []
     for i in range(n_runs_to_compare):
-        # resps = r.iloc[i]["resps"]
-        # n = len(resps)
-        # med_status_dicts = [
-            # clin.parse.parse_response_medication_list(resps[j]) for j in range(n)
-        # ]
-        med_status_dicts = med_status_dicts_list[i]
+        med_status_dicts = _convert_keys_to_lowercase(med_status_dicts_list[i]) 
 
         if i == 0:
             common_meds = [set(med_status_dicts[j].keys()) for j in range(n)]
@@ -111,7 +114,6 @@ def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], df
             return "neither"
         else:
             return None
-
     common_meds_status_dict = [
         {
             med: _get_status_of_med(dfe.iloc[i], med)
@@ -125,19 +127,16 @@ def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], df
     accs_cond = []
     f1s_macro_cond = []
     for i in tqdm(range(n_runs_to_compare)):
-        # resps = r.iloc[i]["resps"]
-        status_resp_list = []
-        status_list = []
+        status_extracted_list = []
+        status_gt_list = []
         for j in range(n):
-            med_status_dict = med_status_dicts_list[i][j]
-        # for j in range(len(resps)):
-            # med_status_dict = clin.parse.parse_response_medication_list(resps[j])
+            med_status_dict = _convert_keys_to_lowercase([med_status_dicts_list[i][j]])[0]
             for med in common_meds_status_dict[j]:
-                status_resp_list.append(med_status_dict[med])
-                status_list.append(common_meds_status_dict[j][med])
-        accs_cond.append(np.mean(np.array(status_resp_list) == np.array(status_list)))
+                status_extracted_list.append(med_status_dict[med])
+                status_gt_list.append(common_meds_status_dict[j][med])
+        accs_cond.append(np.mean(np.array(status_extracted_list) == np.array(status_gt_list)))
         f1s_macro_cond.append(
-            sklearn.metrics.f1_score(status_list, status_resp_list, average="macro")
+            sklearn.metrics.f1_score(status_gt_list, status_extracted_list, average="macro")
         )
 
     return accs_cond, f1s_macro_cond
