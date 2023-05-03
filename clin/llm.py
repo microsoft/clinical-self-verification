@@ -70,7 +70,7 @@ def llm_openai(checkpoint="text-davinci-003") -> LLM:
             self.cache_dir = cache_dir
 
         @repeatedly_call_with_delay
-        def __call__(self, prompt: str, max_new_tokens=250, seed=1, do_sample=True):
+        def __call__(self, prompt: str, max_new_tokens=250, seed=1, do_sample=True, stop=None):
             # cache
             os.makedirs(self.cache_dir, exist_ok=True)
             hash_str = hashlib.sha256(prompt.encode()).hexdigest()
@@ -92,6 +92,7 @@ def llm_openai(checkpoint="text-davinci-003") -> LLM:
                 top_p=1,
                 frequency_penalty=0.25,  # maximum is 2
                 presence_penalty=0,
+                stop=stop,
                 # stop=["101"]
             )
             response_text = response["choices"][0]["text"]
@@ -121,6 +122,7 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
             max_new_tokens=250,
             seed=1,
             do_sample=True,
+            stop=None,
         ):
             """
             prompts_list: list of dicts, each dict has keys 'role' and 'content'
@@ -171,6 +173,7 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
                 top_p=1,
                 frequency_penalty=0.25,  # maximum is 2
                 presence_penalty=0,
+                stop=stop,
                 # stop=["101"]
             )
 

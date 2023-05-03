@@ -1,5 +1,7 @@
 Experiments with self-verification using LLMS for clinical tasks.
-Based of [cookiecutter-data-science](https://github.com/drivendata/cookiecutter-data-science).
+- Using self-verification on top of experiments in [this paper](https://arxiv.org/pdf/2205.12689v2.pdf)
+
+Based on [cookiecutter-data-science](https://github.com/drivendata/cookiecutter-data-science).
 
 # Organization
 - `clin`: contains main code for modeling (e.g.prompts)
@@ -9,18 +11,18 @@ Based of [cookiecutter-data-science](https://github.com/drivendata/cookiecutter-
 - `tests`: unit tests
 
 # Setup
-- clone and run `pip install -e .`, resulting in a package named `project_name` that can be imported
+- clone and run `pip install -e .`, resulting in a package named `clin` that can be imported
     - see `setup.py` for dependencies, not all are required
 - example run: run `python scripts/01_eval_models.py` (which calls `experiments/01_eval_model.py`) then view the results in `notebooks/01_eval_results.ipynb`
 - keep tests upated and run using `pytest`
 
 # Features
-- scripts sweep over hyperparameters using easy-to-specify python code
+- `scripts` sweep over hyperparameters using python code
 - experiments automatically cache runs that have already completed
     - caching uses the (**non-default**) arguments in the argparse namespace
 - notebooks can easily evaluate results aggregated over multiple experiments using pandas
 
-# Guidelines
+# General coding standards used
 - See some useful packages [here](https://csinva.io/blog/misc/ml_coding_tips)
 - Avoid notebooks whenever possible (ideally, only for analyzing results, making figures)
 - Paths should be specified relative to a file's location (e.g. `os.path.join(os.path.dirname(__file__), 'data')`)

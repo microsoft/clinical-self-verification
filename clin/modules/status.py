@@ -4,7 +4,7 @@ import clin.parse
 import clin.llm
 
 ######## Original examples with evidence ###############################
-EX_0_POS = """Patient Note
+EX_0_POS = f"""Patient Note
 ------------
 _%#NAME#%_ tolerated his chemotherapy well with minimal nausea and no emesis. At the time of discharge, he was in no apparent distress and was afebrile. He went home with daily doses of 6 MP which they plan to crush, at home, to help swallowing. Also at the time of his discharge he was switched from dapsone to Bactrim, which was also to be crushed and mixed in with his food for PCP prophylaxis.
 
@@ -40,6 +40,33 @@ Original: "fentanyl" (active)
 Evidence: "she was weaned off her PCA and started on a fentanyl patch"
 Revised: "fentanyl" (active)"""
 
+EX_0_ADDITION_TEXT = 'He does not want to take Celexa, so I put him back on Lexapro 2 mg p.o. q.d.'
+EX_0_ADDITION_LABEL = '''Original: "Lexapro" (active)
+Evidence: "I put him back on Lexapro 2 mg p.o. q.d."
+Revised: "Lexapro" (active)
+
+Original: "Celexa" (discontinued)
+Evidence: "He does not want to take Celexa"
+Revised: "Celexa" (neither)'''
+
+EX_0_NEG = f"""Patient Note
+------------
+_%#NAME#%_ tolerated his chemotherapy well with minimal nausea and no emesis. At the time of discharge, he was in no apparent distress and was afebrile. He went home with daily doses of 6 MP which they plan to crush, at home, to help swallowing. Also at the time of his discharge he was switched from dapsone to Bactrim, which was also to be crushed and mixed in with his food for PCP prophylaxis. {EX_0_ADDITION_TEXT}
+
+Original: "dapsone" (discontinued)
+Evidence: "he was switched from dapsone to Bactrim"
+Revised: "dapsone" (discontinued)
+
+Original: "Bactrim" (active)
+Evidence: "he was switched from dapsone to Bactrim"
+Revised: "Bactrim" (active)
+
+Original: "6 MP" (active)
+Evidence: "he went home with daily doses of 6 MP"
+Revised: "6 MP" (active)
+
+{EX_0_ADDITION_LABEL}"""
+
 EX_2_NEG = """Patient Note
 ------------
 The patient was transferred up to the floor, aspirated, and developed a pneumonia in her right lower and middle lobes. This was treated with a course of Timentin and started on a course of vancomycin. Sputum cultures did come back with MSSA and MRSA. The patient did complete a course of Timentin. This was discontinued. The patient had a positive sputum culture for MRSA on _%#MMDD2006#%_, and the vancomycin was continued.
@@ -73,19 +100,19 @@ Evidence: "Zosyn 3.375 gm IV q.6 h."
 Revised: "Zosyn" (active)"""
 
 
-EXS_POS = [EX_0_POS, EX_1_POS]
-EXS_NEG = [EX_2_NEG, EX_3_NEG]
+EXS_POS = [EX_1_POS, EX_0_POS]
+EXS_NEG = [EX_0_NEG, EX_2_NEG, EX_3_NEG]
 
 
 class StatusVerifier:
-    def __init__(self, n_shots_pos=1, n_shots_neg=1):
+    def __init__(self, n_shots_pos=0, n_shots_neg=1):
         self.n_shots_pos = n_shots_pos
         self.n_shots_neg = n_shots_neg
         exs_pos = EXS_POS[: self.n_shots_pos]
         exs_neg = EXS_NEG[: self.n_shots_neg]
         exs = exs_pos + exs_neg
         self.prompt = (
-            f"""Check the status of each medication found in the patient note (active, discontinued, or neither). Use the patient note and the extracted evidence to revise the medication's status if necessary."""
+            f"""Check the status of each medication found in the patient note (active, discontinued, or neither). Use the patient note and the extracted evidence to revise the medication's status if necessary. Only change the status if the evidence clearly warrants a change."""
             + "\n\n"
             + "\n\n\n".join(exs)
         )
@@ -112,8 +139,7 @@ Evidence: "{med_evidence_dict[med]}"
 Revised:"""
             )
 
-            med_and_status_revised = llm(prompt_ex)
-            med_and_status_revised
+            med_and_status_revised = llm(prompt_ex, stop='\n')
             status = clin.parse.parse_medication_and_status_to_status(
                 med_and_status_revised
             )

@@ -27,6 +27,8 @@ import clin.modules.prune
 import clin.modules.status
 from imodelsx import cache_save_utils
 
+# python experiments/01_eval_model.py --use_cache 0
+
 
 # initialize args
 def add_main_args(parser):
@@ -142,7 +144,7 @@ if __name__ == "__main__":
     ev = clin.modules.evidence.EvidenceVerifier()
     sv = clin.modules.status.StatusVerifier()
 
-    # apply individual verifiers
+    # apply individual verifiers ####################################
     # apply omission verifier
     med_status_dict_list_ov = [
         ov(dfe.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm_verify)
@@ -224,6 +226,20 @@ if __name__ == "__main__":
         for k_met in mets_dict_single.keys():
             r[k_met + "___" + k] = mets_dict_single[k_met]
         r["dict_" + k] = med_status_results[k]
+    r["dict_evidence_ov_pv_ev"] = med_evidence_dict_list_ev_
+
+    # status verifier
+    logging.info("status verifier....")
+    med_status_dict_list_sv = [
+        sv(
+            dfe.iloc[i]["snippet"],
+            med_status_dict=med_status_dict_list_ev_[i],
+            med_evidence_dict=med_evidence_dict_list_ev_[i],
+            llm=llm_verify,
+        )
+        for i in tqdm(range(n))
+    ]
+    r['dict_sv'] = med_status_dict_list_sv
 
     # print metrics
     logging.info(f'precision: {r["precision___original"]}')
