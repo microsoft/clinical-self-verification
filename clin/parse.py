@@ -43,6 +43,11 @@ def parse_response_medication_list(s: str, with_status=True, lower=True) -> Dict
     }
 
     Note: ends early if it encounters "None" in the list
+    Params
+    ------
+    with_status: bool
+        If true, input has no status in parentheses and outputs None as values for each key
+        Inputs might not be in quotes
     """
 
     s = s.replace('- ', '')
@@ -51,13 +56,17 @@ def parse_response_medication_list(s: str, with_status=True, lower=True) -> Dict
     for i, s in enumerate(s_list):
         if s.lower().strip('-" ').startswith("non"):
             break
-        # find second occurence of "
-        idx = s.find('"', s.find('"') + 1)
-        medication = s[:idx].strip('"').strip(' "')
-        if lower:
-            medication = medication.lower()
+
+        if with_status:
+            # find second occurence of "
+            idx = s.find('"', s.find('"') + 1)
+            medication = s[:idx].strip('"').strip(' "')
+        else:
+            medication = s.strip('"').strip(' "')
 
         # clean up
+        if lower:
+            medication = medication.lower()
         medication = _drop_dosage(medication)
 
         if with_status:
