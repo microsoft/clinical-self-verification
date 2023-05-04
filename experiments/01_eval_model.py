@@ -214,24 +214,6 @@ if __name__ == "__main__":
     med_status_dict_list_ev_ = [med_status_and_evidence_[i][0] for i in range(n)]
     med_evidence_dict_list_ev_ = [med_status_and_evidence_[i][1] for i in range(n)]
 
-    # compute metrics
-    med_status_results = {
-        "original": med_status_dict_list_orig,
-        "ov": med_status_dict_list_ov,
-        "pv": med_status_dict_list_pv,
-        "ev": med_status_dict_list_ev,
-        "ov_pv": med_status_dict_list_pv_,
-        "ov_pv_ev": med_status_dict_list_ev_,
-    }
-    for k in med_status_results.keys():
-        mets_dict_single = clin.eval.calculate_metrics(
-            med_status_results[k], dfe, verbose=False
-        )
-        for k_met in mets_dict_single.keys():
-            r[k_met + "___" + k] = mets_dict_single[k_met]
-        r["dict_" + k] = med_status_results[k]
-    r["dict_evidence_ov_pv_ev"] = med_evidence_dict_list_ev_
-
     # status verifier
     logging.info("status verifier....")
     med_status_dict_list_sv = [
@@ -243,7 +225,25 @@ if __name__ == "__main__":
         )
         for i in tqdm(range(n))
     ]
-    r['dict_sv'] = med_status_dict_list_sv
+
+    # compute metrics and add to r
+    med_status_results = {
+        "original": med_status_dict_list_orig,
+        "ov": med_status_dict_list_ov,
+        "pv": med_status_dict_list_pv,
+        "ev": med_status_dict_list_ev,
+        "ov_pv": med_status_dict_list_pv_,
+        "ov_pv_ev": med_status_dict_list_ev_,
+        'sv': med_status_dict_list_sv,
+    }
+    for k in med_status_results.keys():
+        mets_dict_single = clin.eval.calculate_metrics(
+            med_status_results[k], dfe, verbose=False
+        )
+        for k_met in mets_dict_single.keys():
+            r[k_met + "___" + k] = mets_dict_single[k_met]
+        r["dict_" + k] = med_status_results[k]
+    r["dict_evidence_ov_pv_ev"] = med_evidence_dict_list_ev_
 
     # print metrics
     logging.info(f'precision: {r["precision___original"]}')

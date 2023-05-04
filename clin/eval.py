@@ -81,20 +81,13 @@ def calculate_metrics(med_status_dicts: List[Dict[str, str]], dfe: pd.DataFrame,
     return mets_dict
 
 
-def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame, verbose=False):
-    """Compute the metrics for medication status,
-    conditioned on the medications that are retrieved by all models and are valid medications in the groundtruth
-    """
-    def _convert_keys_to_lowercase(dicts_list):
-        return [{k.lower(): dicts_list[j][k] for k in dicts_list[j]} for j in range(len(dicts_list))]
-
-
+def get_common_medications(med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame):
     # get the common retrieved medications for each row by all models
     n_runs_to_compare = len(med_status_dicts_list)
     n = len(dfe)
     common_meds = []
     for i in range(n_runs_to_compare):
-        med_status_dicts = _convert_keys_to_lowercase(med_status_dicts_list[i]) 
+        med_status_dicts = clin.parse.convert_keys_to_lowercase(med_status_dicts_list[i]) 
 
         if i == 0:
             common_meds = [set(med_status_dicts[j].keys()) for j in range(n)]
@@ -122,16 +115,22 @@ def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], df
         }
         for i in range(len(dfe))
     ]
+    return common_meds_status_gt_dict
 
+def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], common_meds_status_gt_dict: Dict[str, str], verbose=False):
+    """Compute the metrics for medication status,
+    conditioned on the medications that are retrieved by all models and are valid medications in the groundtruth
+    """
+    n_runs_to_compare = len(med_status_dicts_list)
+    n = len(common_meds_status_gt_dict)
     # compute conditional accuracy for all rows
-    print('comp')
     accs_cond = []
     f1s_macro_cond = []
     for i in tqdm(range(n_runs_to_compare)):
         status_extracted_list = []
         status_gt_list = []
         for j in range(n):
-            med_status_dict = _convert_keys_to_lowercase([med_status_dicts_list[i][j]])[0]
+            med_status_dict = clin.parse.convert_keys_to_lowercase([med_status_dicts_list[i][j]])[0]
             for med in common_meds_status_gt_dict[j]:
                 status_extracted_list.append(med_status_dict[med])
                 status_gt_list.append(common_meds_status_gt_dict[j][med])

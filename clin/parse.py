@@ -23,6 +23,9 @@ def str_to_list(s):
     else:
         return l
 
+def convert_keys_to_lowercase(dicts_list):
+    return [{k.lower(): dicts_list[j][k] for k in dicts_list[j]} for j in range(len(dicts_list))]
+
 def list_medications(row) -> str:
         d = [('active', val) for val in str_to_list(row['active_medications'])] + \
             [('discontinued', val) for val in str_to_list(row['discontinued_medications'])] + \
