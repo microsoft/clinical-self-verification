@@ -20,11 +20,12 @@ import torch
 import clin.llm
 import clin.parse
 import clin.eval
-import clin.modules.extract
-import clin.modules.evidence
-import clin.modules.omission
-import clin.modules.prune
-import clin.modules.status
+from clin.modules import med_status
+import clin.modules.med_status.extract
+import clin.modules.med_status.prune
+import clin.modules.med_status.evidence
+import clin.modules.med_status.omission
+import clin.modules.med_status.status
 from imodelsx import cache_save_utils
 
 # python experiments/01_eval_model.py --use_cache 0
@@ -129,7 +130,7 @@ if __name__ == "__main__":
     )
 
     # perform basic extraction
-    extractor = clin.modules.extract.Extractor()
+    extractor = med_status.extract.Extractor()
     r["extracted_strs"] = [
         extractor(i, df, nums, args.n_shots, llm) for i in range(len(df))
     ]
@@ -145,10 +146,10 @@ if __name__ == "__main__":
     ]
     llm_verify = clin.llm.get_llm(args.checkpoint_verify)
 
-    ov = clin.modules.omission.OmissionVerifier()
-    pv = clin.modules.prune.PruneVerifier()
-    ev = clin.modules.evidence.EvidenceVerifier()
-    sv = clin.modules.status.StatusVerifier()
+    ov = med_status.omission.OmissionVerifier()
+    pv = med_status.prune.PruneVerifier()
+    ev = med_status.evidence.EvidenceVerifier()
+    sv = med_status.status.StatusVerifier()
 
     # apply individual verifiers ####################################
     # apply omission verifier

@@ -141,4 +141,4 @@ slurm_files/
 slurm_files_out/
 scripts/data/
 
-data/ebm*
+data/ebm/ebm*
