@@ -180,3 +180,39 @@ def medication_dict_to_bullet_str(med_status_dict):
     '''
     bulleted_str = ' ' + '\n- '.join([f'"{med}" ({status})' for med, status in med_status_dict.items()])
     return bulleted_str
+
+def list_to_bullet_str(l):
+    '''
+    Given a list, return a bulleted string
+    
+    Example
+    -------
+    ['Percocet', 'Gemzar', 'Oxycontin IR', 'Fentanyl']
+
+    ->
+
+    - Percocet
+    - Gemzar
+    - Oxycontin IR
+    - Fentanyl
+    '''
+    bulleted_str = '- '+ '\n- '.join([str(x) for x in l])
+    return bulleted_str
+
+def bullet_str_to_list(l):
+    '''
+    Given a bulleted string, return a list
+    
+    Example
+    -------
+    - Percocet
+    - Gemzar
+    - Oxycontin IR
+    - Fentanyl
+
+    ->
+
+    ['Percocet', 'Gemzar', 'Oxycontin IR', 'Fentanyl']
+    '''
+    l = l.strip()
+    return [x.strip('- ') for x in l.split('\n')]

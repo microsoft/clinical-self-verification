@@ -4,9 +4,10 @@ Experiments with self-verification using LLMS for clinical tasks.
 Based on [cookiecutter-data-science](https://github.com/drivendata/cookiecutter-data-science).
 
 # Organization
-- `clin`: contains main code (e.g. prompted modules)
+- `clin`: contains main evaluation code
+  - `clin/modules`: code for prompted modules for extraction and self-verification
 - `experiments`: code for runnning experiments (e.g. loading data, training models, evaluating models)
-- `scripts`: scripts for running experiments (e.g. python scripts that launch jobs in `experiments` folder with different hyperparams)
+- `scripts`: scripts for experiment sweeps (e.g. python scripts that launch jobs in `experiments` folder with different hyperparams)
 - `notebooks`: jupyter notebooks for analyzing results and making figures
 - `tests`: unit tests
 

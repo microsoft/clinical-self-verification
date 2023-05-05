@@ -15,9 +15,47 @@ from collections import defaultdict
 import clin.parse
 import sklearn.metrics
 
-# Note: none of the evaluation functions should be case sensitive
+# note, eval should be case-insensitive, preprocess before passing to these funcs
 
-def eval_med_extraction(
+############################# common functions #####################################
+def calculate_precision_recall_from_lists(pred_list: List[str], gt_list: List[str], verbose=False):
+    true_pos = len(set(pred_list).intersection(set(gt_list)))
+    pred_pos = len(pred_list)
+    gt_pos = len(gt_list)
+
+    if verbose:
+        if "".join(sorted(pred_list)) == "".join(sorted(gt_list)):
+            print("correct")
+            # print("grt", sorted(meds_true))
+        else:
+            print("pred", sorted(pred_list))
+            print("true", sorted(gt_list))
+            print()
+
+    return {
+        "true_pos": true_pos,
+        "pred_pos": pred_pos,
+        "gt_pos": gt_pos,
+
+        'fp_list': list(set(pred_list) - set(gt_list)),
+        'fn_list': list(set(gt_list) - set(pred_list)),
+    }
+
+def aggregate_precision_recall(mets_df: pd.DataFrame, verbose=False):
+    rec = np.sum(mets_df["true_pos"]) / np.sum(mets_df["gt_pos"])
+    prec = np.sum(mets_df["true_pos"]) / np.sum(mets_df["pred_pos"])
+    mets_dict = {
+        "recall": rec,
+        "precision": prec,
+        "f1": 2 * rec * prec / (rec + prec),
+    }
+    if verbose:
+        print('fp', sum(mets_df['fp_list'], []))
+        print('fn', sum(mets_df['fn_list'], []))
+    return mets_dict
+
+############################# med status #####################################
+def process_med_lists(
     med_status_dict: Dict[str, str],
     df_row: pd.Series, verbose=False
 ) -> List[bool]:
@@ -26,59 +64,18 @@ def eval_med_extraction(
     return precision and recall
     """
 
-    # strip and convert everything to lowercase
+    # process meds_retrieved
     meds_retrieved = list(med_status_dict.keys())
     meds_retrieved = [med.strip(' "').lower() for med in meds_retrieved]
+
+    # get meds_true
     meds_true = (
         clin.parse.str_to_list(df_row["active_medications"])
         + clin.parse.str_to_list(df_row["discontinued_medications"])
         + clin.parse.str_to_list(df_row["neither_medications"])
     )
     meds_true = [med.strip(' "').lower() for med in meds_true]
-
-    # print things
-    if verbose:
-        if "".join(sorted(meds_retrieved)) == "".join(sorted(meds_true)):
-            print("correct")
-            # print("grt", sorted(meds_true))
-        else:
-            print("ret", sorted(meds_retrieved))
-            print("grt", sorted(meds_true))
-            print()
-
-    # calculate actual metrics
-    true_pos = len(set(meds_retrieved).intersection(set(meds_true)))
-    pred_pos = len(meds_retrieved)
-    gt_pos = len(meds_true)
-    return {
-        "true_pos": true_pos,
-        "pred_pos": pred_pos,
-        "gt_pos": gt_pos,
-
-        'fp_list': list(set(meds_retrieved) - set(meds_true)),
-        'fn_list': list(set(meds_true) - set(meds_retrieved)),
-    }
-
-
-def calculate_metrics(med_status_dicts: List[Dict[str, str]], dfe: pd.DataFrame, verbose=False):
-    mets_dict_per_example = defaultdict(list)
-    for i in range(len(dfe)):
-        mets = eval_med_extraction(med_status_dicts[i], dfe.iloc[i], verbose=verbose)
-        for k in mets.keys():
-            mets_dict_per_example[k].append(mets[k])
-    rec = np.sum(mets_dict_per_example["true_pos"]) / np.sum(mets_dict_per_example["gt_pos"])
-    prec = np.sum(mets_dict_per_example["true_pos"]) / np.sum(mets_dict_per_example["pred_pos"])
-    
-    if verbose:
-        print('fp', sum(mets_dict_per_example['fp_list'], []))
-        print('fn', sum(mets_dict_per_example['fn_list'], []))
-
-    mets_dict = {
-        "recall": rec,
-        "precision": prec,
-        "f1": 2 * rec * prec / (rec + prec),
-    }
-    return mets_dict
+    return meds_retrieved, meds_true
 
 
 def get_common_medications(med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame):

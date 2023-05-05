@@ -132,7 +132,7 @@ if __name__ == "__main__":
     # perform basic extraction
     extractor = med_status.extract.Extractor()
     r["extracted_strs"] = [
-        extractor(i, df, nums, args.n_shots, llm) for i in range(len(df))
+        extractor(i, df, nums, args.n_shots, llm) for i in tqdm(range(len(df)))
     ]
     medications_dict_list = [
         clin.parse.parse_response_medication_list(r["extracted_strs"][i])
@@ -235,12 +235,20 @@ if __name__ == "__main__":
         "ev": med_status_dict_list_ev,
         "ov_pv": med_status_dict_list_pv_,
         "ov_pv_ev": med_status_dict_list_ev_,
-        'sv': med_status_dict_list_sv,
+        "sv": med_status_dict_list_sv,
     }
     for k in med_status_results.keys():
-        mets_dict_single = clin.eval.calculate_metrics(
-            med_status_results[k], dfe, verbose=False
+        mets_df = pd.DataFrame(
+            [
+                clin.eval.calculate_precision_recall_from_lists(
+                    *clin.eval.process_med_lists(
+                        med_status_results[k][i], dfe.iloc[i]
+                    )
+                )
+                for i in range(len(dfe))
+            ]
         )
+        mets_dict_single = clin.eval.aggregate_precision_recall(mets_df)
         for k_met in mets_dict_single.keys():
             r[k_met + "___" + k] = mets_dict_single[k_met]
         r["dict_" + k] = med_status_results[k]

@@ -30,15 +30,6 @@ class Extractor:
         ex_num = nums[i]
         prompt = get_multishot_prompt(df, examples_nums_shot, ex_num)
 
-        response = None
-        while response is None:
-            try:
-                response = llm(prompt)
-
-                # fix for when this function was returning response rather than string
-                if response is not None and not isinstance(response, str):
-                    response = response['choices'][0]['message']['content']
-            except:
-                time.sleep(1)
+        response = llm(prompt)
         return response
     
