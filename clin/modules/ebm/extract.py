@@ -28,7 +28,7 @@ def get_multishot_prompt(df, examples_nums_shot: List[int], ex_num: int):
     return prompt
 
 class Extractor:
-    def __call__(self, i, df, nums, n_shots, llm) -> str:
+    def __call__(self, i, df, nums, n_shots, llm) -> List[str]:
         if i - n_shots < 0:
             examples_nums_shot = nums[i - n_shots:] + nums[:i]
         else:
