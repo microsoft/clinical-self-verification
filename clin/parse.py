@@ -49,8 +49,6 @@ def parse_response_medication_list(s: str, with_status=True, lower=False) -> Dic
     "Gatifloxacin" (initiated)
     - "Acyclovir" (prophylactic therapy through day 100)
     - "Bactrim" (active for PCP prophylaxis)
-    - "Systemic steroids" (weaned)
-    - "Cyclosporin" (discontinued)
 
     -> 
 
@@ -58,8 +56,6 @@ def parse_response_medication_list(s: str, with_status=True, lower=False) -> Dic
         'gatifloxacin': 'initiated',
         'acyclovir': 'prophylactic therapy through day 100',
         'bactrim': 'active for PCP prophylaxis',
-        'systemic steroids': 'weaned',
-        'cyclosporin': 'discontinued',
     }
 
     Note: ends early if it encounters "None" in the list
@@ -102,7 +98,6 @@ def parse_response_medication_list_with_evidence(s: str, lower=False) -> Tuple[D
     "Percocet" (discontinued) "along with Percocet for breakthrough pain which was then switched to OxyContin IR"
     - "Gemzar" (active) "received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty"
     - "OxyContin IR" (active) "along with Percocet for breakthrough pain which was then switched to OxyContin IR"
-    - "fentanyl" (active) "she was weaned off her PCA and started on a fentanyl patch"'''
 
     -> 
 
@@ -111,13 +106,11 @@ def parse_response_medication_list_with_evidence(s: str, lower=False) -> Tuple[D
             'percocet': 'discontinued',
             'gemzar': 'active',
             'oxycontin ir': 'active',
-            'fentanyl': 'active',
         },
         {
             'percocet': 'along with Percocet for breakthrough pain which was then switched to OxyContin IR',
             'gemzar': 'received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty',
             'oxycontin ir': 'along with Percocet for breakthrough pain which was then switched to OxyContin IR',
-            'fentanyl': 'she was weaned off her PCA and started on a fentanyl patch',
         }
     )
     """
@@ -168,7 +161,6 @@ def medication_dict_to_bullet_str(med_status_dict):
         'Percocet': 'discontinued',
         'Gemzar': 'active',
         'Oxycontin IR': 'active',
-        'Fentanyl': 'active',
     }
 
     ->
@@ -176,7 +168,6 @@ def medication_dict_to_bullet_str(med_status_dict):
     "Percocet" (discontinued)
     - "Gemzar" (active)
     - "Oxycontin IR" (active)
-    - "Fentanyl" (active)
     '''
     bulleted_str = ' ' + '\n- '.join([f'"{med}" ({status})' for med, status in med_status_dict.items()])
     return bulleted_str
@@ -187,14 +178,12 @@ def list_to_bullet_str(l):
     
     Example
     -------
-    ['Percocet', 'Gemzar', 'Oxycontin IR', 'Fentanyl']
+    ['Percocet', 'Gemzar']
 
     ->
 
     - Percocet
     - Gemzar
-    - Oxycontin IR
-    - Fentanyl
     '''
     bulleted_str = '- '+ '\n- '.join([str(x) for x in l])
     return bulleted_str
@@ -207,12 +196,36 @@ def bullet_str_to_list(l):
     -------
     - Percocet
     - Gemzar
-    - Oxycontin IR
-    - Fentanyl
 
     ->
 
-    ['Percocet', 'Gemzar', 'Oxycontin IR', 'Fentanyl']
+    ['Percocet', 'Gemzar']
     '''
     l = l.strip()
     return [x.strip('- ') for x in l.split('\n')]
+
+def bullet_str_with_quote_to_dict(s: str) -> Dict:
+    '''
+    Given a bulleted string, with each bullet having evidence in quotes, return a dictionary
+
+    Example
+    -------
+    - Percocet "along with Percocet for breakthrough pain which was then switched to OxyContin IR"
+    - Gemzar "received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty"
+
+    ->
+
+    {
+        'Percocet': 'along with Percocet for breakthrough pain which was then switched to OxyContin IR',
+        'Gemzar': 'received her Gemzar chemotherapy on _%#MMDD2003#%_ without difficulty',
+    }
+    '''
+    s = s.replace('- ', '')
+    s_list = s.split('\n')
+    d = {}
+    for i, s in enumerate(s_list):
+        idx = s.find('"')
+        ex = s[:idx].strip(' "')
+        quote = s[idx + 1:].strip().strip(' "')
+        d[ex] = quote
+    return d
