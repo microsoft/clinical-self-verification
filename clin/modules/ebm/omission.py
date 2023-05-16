@@ -39,37 +39,6 @@ The effect of changing the rate of infusion of propofol for induction of anaesth
 ### Missed interventions
 -"""
 
-PROMPT_V1 = """'List all clinical trial arms (including placebo) in the patient note that were missed in the Extracted interventions list. If no additional clinical trial arms are found, return None\n'
-
-### Patient Note
-Group cognitive behavior therapy for children with high-functioning autism spectrum disorders and anxiety: a randomized trial.
-BACKGROUND Children with high-functioning autism spectrum disorders (ASD) are at high risk for developing significant anxiety. Anxiety can adversely impact functioning across school, home and community environments. Cognitive behavioral therapies (CBT) are frequently used with success for children with anxiety symptoms. Modified CBT interventions for anxiety in children with ASD have also yielded promising results.
-
-### Extracted interventions
-- Group cognitive behavior therapy
-
-### Missed interventions
-- treatment-as-usual
-
-### Patient Note
-Effect of different rates of infusion of propofol for induction of anaesthesia in elderly patients.
-
-The effect of changing the rate of infusion of propofol for induction of anaesthesia was studied in 60 elderly patients. Propofol was administered at 300, 600 or 1200 ml h-1 until loss of consciousness (as judged by loss of verbal contact with the patient) had been achieved. The duration of induction was significantly longer (P less than 0.001) with the slower infusion rates (104, 68 and 51 s), but the total dose used was significantly less (P less than 0.001) in these patients (1.2, 1.6 and 2.5 mg kg-1, respectively). The decrease in systolic and diastolic arterial pressure was significantly less in the 300-ml h-1 group at the end of induction and immediately after induction (P less than 0.01). The incidence of apnoea was also significantly less in the slower infusion group.
-
-### Extracted interventions
-- propofol
-
-### Missed interventions
-- None
-
-### Patient Note
-{snippet}
-
-## Extracted interventions
-{bulleted_str}
-
-### Missed interventions
--"""
 
 PROMPT_V1 = """'List all clinical trial arms in the patient note that were missed in the Extracted interventions list. If no additional clinical trial arms are found, return None\n'
 
@@ -107,7 +76,7 @@ The effect of changing the rate of infusion of propofol for induction of anaesth
 ### Missed interventions
 -"""
 
-PROMPT_V2 = """'List all clinical trial arms in the patient note that were missed in the Extracted interventions list. If no additional clinical trial arms are found, return None\n'
+PROMPT_V2 = """'List all clinical trial arms in the patient note that were missed in the Extracted interventions list. Each clinical trial arm name should be short and precise. If no additional clinical trial arms are found, return None\n'
 
 ### Patient Note
 Safety, tolerability, and immunogenicity after 1 and 2 doses of zoster vaccine in healthy adults ≥60 years of age.

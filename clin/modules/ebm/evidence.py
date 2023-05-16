@@ -61,7 +61,13 @@ class EvidenceVerifier:
             print("<START>" + bullet_str_extra + "<END>")
             print(extra_list)
         ev_dict = clin.parse.bullet_str_with_quote_to_dict(bullet_str_extra)
-        ev_dict = {k: v for k, v in ev_dict.items() if v.lower() != "no evidence"}
+        ev_dict = {
+            k: v
+            for k, v in ev_dict.items() 
+            if v.lower() != "no evidence" # evidence found
+            and k.lower() in snippet.lower() # snippet contains trial arm name
+        }
+
         return ev_dict
 
 
