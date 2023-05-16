@@ -7,7 +7,71 @@ import joblib
 from os.path import join
 from clin.config import PATH_REPO
 
-PROMPT_V1 = """'List all clinical trial arms (including placebo) in the patient note that were missed in Extracted interventions list. If no additional interventions are found, return None\n'
+PROMPT_V0 = """'List all clinical trial arms (including placebo) in the patient note that were missed in the Extracted interventions list. If no additional clinical trial arms are found, return None\n'
+
+### Patient Note
+Group cognitive behavior therapy for children with high-functioning autism spectrum disorders and anxiety: a randomized trial.
+BACKGROUND Children with high-functioning autism spectrum disorders (ASD) are at high risk for developing significant anxiety. Anxiety can adversely impact functioning across school, home and community environments. Cognitive behavioral therapies (CBT) are frequently used with success for children with anxiety symptoms. Modified CBT interventions for anxiety in children with ASD have also yielded promising results.
+
+### Extracted interventions
+- Group cognitive behavior therapy
+
+### Missed interventions
+- treatment-as-usual
+
+### Patient Note
+Effect of different rates of infusion of propofol for induction of anaesthesia in elderly patients.
+
+The effect of changing the rate of infusion of propofol for induction of anaesthesia was studied in 60 elderly patients. Propofol was administered at 300, 600 or 1200 ml h-1 until loss of consciousness (as judged by loss of verbal contact with the patient) had been achieved. The duration of induction was significantly longer (P less than 0.001) with the slower infusion rates (104, 68 and 51 s), but the total dose used was significantly less (P less than 0.001) in these patients (1.2, 1.6 and 2.5 mg kg-1, respectively). The decrease in systolic and diastolic arterial pressure was significantly less in the 300-ml h-1 group at the end of induction and immediately after induction (P less than 0.01). The incidence of apnoea was also significantly less in the slower infusion group.
+
+### Extracted interventions
+- propofol
+
+### Missed interventions
+- None
+
+### Patient Note
+{snippet}
+
+## Extracted interventions
+{bulleted_str}
+
+### Missed interventions
+-"""
+
+PROMPT_V1 = """'List all clinical trial arms (including placebo) in the patient note that were missed in the Extracted interventions list. If no additional clinical trial arms are found, return None\n'
+
+### Patient Note
+Group cognitive behavior therapy for children with high-functioning autism spectrum disorders and anxiety: a randomized trial.
+BACKGROUND Children with high-functioning autism spectrum disorders (ASD) are at high risk for developing significant anxiety. Anxiety can adversely impact functioning across school, home and community environments. Cognitive behavioral therapies (CBT) are frequently used with success for children with anxiety symptoms. Modified CBT interventions for anxiety in children with ASD have also yielded promising results.
+
+### Extracted interventions
+- Group cognitive behavior therapy
+
+### Missed interventions
+- treatment-as-usual
+
+### Patient Note
+Effect of different rates of infusion of propofol for induction of anaesthesia in elderly patients.
+
+The effect of changing the rate of infusion of propofol for induction of anaesthesia was studied in 60 elderly patients. Propofol was administered at 300, 600 or 1200 ml h-1 until loss of consciousness (as judged by loss of verbal contact with the patient) had been achieved. The duration of induction was significantly longer (P less than 0.001) with the slower infusion rates (104, 68 and 51 s), but the total dose used was significantly less (P less than 0.001) in these patients (1.2, 1.6 and 2.5 mg kg-1, respectively). The decrease in systolic and diastolic arterial pressure was significantly less in the 300-ml h-1 group at the end of induction and immediately after induction (P less than 0.01). The incidence of apnoea was also significantly less in the slower infusion group.
+
+### Extracted interventions
+- propofol
+
+### Missed interventions
+- None
+
+### Patient Note
+{snippet}
+
+## Extracted interventions
+{bulleted_str}
+
+### Missed interventions
+-"""
+
+PROMPT_V1 = """'List all clinical trial arms in the patient note that were missed in the Extracted interventions list. If no additional clinical trial arms are found, return None\n'
 
 ### Patient Note
 Safety, tolerability, and immunogenicity after 1 and 2 doses of zoster vaccine in healthy adults ≥60 years of age.
@@ -43,10 +107,47 @@ The effect of changing the rate of infusion of propofol for induction of anaesth
 ### Missed interventions
 -"""
 
+PROMPT_V2 = """'List all clinical trial arms in the patient note that were missed in the Extracted interventions list. If no additional clinical trial arms are found, return None\n'
+
+### Patient Note
+Safety, tolerability, and immunogenicity after 1 and 2 doses of zoster vaccine in healthy adults ≥60 years of age.
+
+BACKGROUND Incidence and severity of herpes zoster (HZ) and postherpetic neuralgia increase with age, associated with age-related decrease in immunity to varicella-zoster virus (VZV). One dose of zoster vaccine (ZV) has demonstrated substantial protection against HZ; this study examined impact of a second dose of ZV.
+METHODS Randomized, double-blind, multicenter study with 210 subjects ≥60 years old compared immunity and safety profiles after one and two doses of ZV, separated by 6 weeks, vs. placebo. Immunogenicity was evaluated using VZV interferon-gamma (IFN-γ) enzyme-linked immunospot (ELISPOT) assay and VZV glycoprotein enzyme-linked immunosorbent antibody (gpELISA) assay. Adverse experiences (AEs) were recorded on a standardized Vaccination Report Card.
+RESULTS No serious vaccine-related AEs occurred. VZV IFN-γ ELISPOT geometric mean count (GMC) of spot-forming cells per 10(6) peripheral blood mononuclear cells increased in the ZV group from 16.9 prevaccination to 49.5 and 32.8 at 2 and 6 weeks postdose 1, respectively. Two weeks, 6 weeks and 6 months postdose 2, GMC was 44.3, 42.9, and 36.5, respectively. GMC in the placebo group did not change during the study. The peak ELISPOT response occurred ∼2 weeks after each ZV dose. The gpELISA geometric mean titers (GMTs) in the ZV group were higher than in the placebo group at 6 weeks after each dose. Correlation between the IFN-γ ELISPOT and gpELISA assays was poor.
+CONCLUSIONS ZV was generally well-tolerated and immunogenic in adults ≥60 years old. A second dose of ZV was generally safe, but did not boost VZV-specific immunity beyond levels achieved postdose 1.
+
+### Extracted interventions
+- placebo
+
+### Missed interventions
+- zoster vaccine
+
+### Patient Note
+Effect of different rates of infusion of propofol for induction of anaesthesia in elderly patients.
+
+The effect of changing the rate of infusion of propofol for induction of anaesthesia was studied in 60 elderly patients. Propofol was administered at 300, 600 or 1200 ml h-1 until loss of consciousness (as judged by loss of verbal contact with the patient) had been achieved. The duration of induction was significantly longer (P less than 0.001) with the slower infusion rates (104, 68 and 51 s), but the total dose used was significantly less (P less than 0.001) in these patients (1.2, 1.6 and 2.5 mg kg-1, respectively). The decrease in systolic and diastolic arterial pressure was significantly less in the 300-ml h-1 group at the end of induction and immediately after induction (P less than 0.01). The incidence of apnoea was also significantly less in the slower infusion group.
+
+### Extracted interventions
+- propofol
+
+### Missed interventions
+- None
+
+### Patient Note
+{snippet}
+
+## Extracted interventions
+{bulleted_str}
+
+### Missed interventions
+-"""
+
+
 
 class OmissionVerifier:
     def __init__(self):
-        self.prompt = PROMPT_V1
+        self.prompt = PROMPT_V2
 
     def __call__(
         self, snippet, bullet_list, llm, verbose=False
@@ -56,13 +157,16 @@ class OmissionVerifier:
         )
         bullet_str_extra = llm(prompt_ex)
         extra_list = clin.parse.bullet_str_to_list(bullet_str_extra)
+        if 'placebo' in snippet.lower():
+            extra_list.append('placebo')
         if verbose:
             print(prompt_ex, end="")
             print("<START>" + bullet_str_extra + "<END>")
             print(extra_list)
         bullet_list_new = deepcopy(bullet_list)
+        bullet_list_lower = [k.lower() for k in bullet_list]
         for k in extra_list:
-            if not k.lower().startswith('none'):
+            if not k.lower().startswith('none') and not k.lower() in bullet_list_lower:
                 bullet_list_new.append(k)
         return bullet_list_new
 
