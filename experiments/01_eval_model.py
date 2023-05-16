@@ -19,7 +19,8 @@ import torch
 
 import clin.llm
 import clin.parse
-import clin.eval
+import clin.eval.eval
+import clin.eval.med_status
 from clin.modules import med_status
 import clin.modules.med_status.extract
 import clin.modules.med_status.prune
@@ -240,15 +241,15 @@ if __name__ == "__main__":
     for k in med_status_results.keys():
         mets_df = pd.DataFrame(
             [
-                clin.eval.calculate_precision_recall_from_lists(
-                    *clin.eval.process_med_lists(
+                clin.eval.eval.calculate_precision_recall_from_lists(
+                    *clin.eval.med_status.process_med_lists(
                         med_status_results[k][i], dfe.iloc[i]
                     )
                 )
                 for i in range(len(dfe))
             ]
         )
-        mets_dict_single = clin.eval.aggregate_precision_recall(mets_df)
+        mets_dict_single = clin.eval.eval.aggregate_precision_recall(mets_df)
         for k_met in mets_dict_single.keys():
             r[k_met + "___" + k] = mets_dict_single[k_met]
         r["dict_" + k] = med_status_results[k]

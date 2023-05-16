@@ -15,49 +15,9 @@ from collections import defaultdict
 import clin.parse
 import sklearn.metrics
 
-# note, eval should be case-insensitive, preprocess before passing to these funcs
 
-############################# common functions #####################################
-def calculate_precision_recall_from_lists(pred_list: List[str], gt_list: List[str], verbose=False):
-    true_pos = len(set(pred_list).intersection(set(gt_list)))
-    pred_pos = len(pred_list)
-    gt_pos = len(gt_list)
-
-    if verbose:
-        if "".join(sorted(pred_list)) == "".join(sorted(gt_list)):
-            print("correct")
-            # print("grt", sorted(meds_true))
-        else:
-            print("pred", sorted(pred_list))
-            print("true", sorted(gt_list))
-            print()
-
-    return {
-        "true_pos": true_pos,
-        "pred_pos": pred_pos,
-        "gt_pos": gt_pos,
-
-        'fp_list': list(set(pred_list) - set(gt_list)),
-        'fn_list': list(set(gt_list) - set(pred_list)),
-    }
-
-def aggregate_precision_recall(mets_df: pd.DataFrame, verbose=False):
-    rec = np.sum(mets_df["true_pos"]) / np.sum(mets_df["gt_pos"])
-    prec = np.sum(mets_df["true_pos"]) / np.sum(mets_df["pred_pos"])
-    mets_dict = {
-        "recall": rec,
-        "precision": prec,
-        "f1": 2 * rec * prec / (rec + prec),
-    }
-    if verbose:
-        print('fp', sum(mets_df['fp_list'], []))
-        print('fn', sum(mets_df['fn_list'], []))
-    return mets_dict
-
-############################# med status #####################################
 def process_med_lists(
-    med_status_dict: Dict[str, str],
-    df_row: pd.Series, verbose=False
+    med_status_dict: Dict[str, str], df_row: pd.Series, verbose=False
 ) -> List[bool]:
     """
     Given a dictionary of medication status, and a row of the dataframe,
@@ -78,13 +38,17 @@ def process_med_lists(
     return meds_retrieved, meds_true
 
 
-def get_common_medications(med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame):
+def get_common_medications(
+    med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame
+):
     # get the common retrieved medications for each row by all models
     n_runs_to_compare = len(med_status_dicts_list)
     n = len(dfe)
     common_meds = []
     for i in range(n_runs_to_compare):
-        med_status_dicts = clin.parse.convert_keys_to_lowercase(med_status_dicts_list[i]) 
+        med_status_dicts = clin.parse.convert_keys_to_lowercase(
+            med_status_dicts_list[i]
+        )
 
         if i == 0:
             common_meds = [set(med_status_dicts[j].keys()) for j in range(n)]
@@ -104,6 +68,7 @@ def get_common_medications(med_status_dicts_list: List[List[Dict[str, str]]], df
             return "neither"
         else:
             return None
+
     common_meds_status_gt_dict = [
         {
             med: _get_status_of_med(dfe.iloc[i], med)
@@ -114,7 +79,12 @@ def get_common_medications(med_status_dicts_list: List[List[Dict[str, str]]], df
     ]
     return common_meds_status_gt_dict
 
-def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], common_meds_status_gt_dict: Dict[str, str], verbose=False):
+
+def eval_medication_status(
+    med_status_dicts_list: List[List[Dict[str, str]]],
+    common_meds_status_gt_dict: Dict[str, str],
+    verbose=False,
+):
     """Compute the metrics for medication status,
     conditioned on the medications that are retrieved by all models and are valid medications in the groundtruth
     """
@@ -127,16 +97,31 @@ def eval_medication_status(med_status_dicts_list: List[List[Dict[str, str]]], co
         status_extracted_list = []
         status_gt_list = []
         for j in range(n):
-            med_status_dict = clin.parse.convert_keys_to_lowercase([med_status_dicts_list[i][j]])[0]
+            med_status_dict = clin.parse.convert_keys_to_lowercase(
+                [med_status_dicts_list[i][j]]
+            )[0]
             for med in common_meds_status_gt_dict[j]:
                 status_extracted_list.append(med_status_dict[med])
                 status_gt_list.append(common_meds_status_gt_dict[j][med])
                 if verbose:
                     if not med_status_dict[med] == common_meds_status_gt_dict[j][med]:
-                        print('med', med, '\n\t', 'pred\t', med_status_dict[med], '\n\t', 'gt\t',common_meds_status_gt_dict[j][med])
-        accs_cond.append(np.mean(np.array(status_extracted_list) == np.array(status_gt_list)))
+                        print(
+                            "med",
+                            med,
+                            "\n\t",
+                            "pred\t",
+                            med_status_dict[med],
+                            "\n\t",
+                            "gt\t",
+                            common_meds_status_gt_dict[j][med],
+                        )
+        accs_cond.append(
+            np.mean(np.array(status_extracted_list) == np.array(status_gt_list))
+        )
         f1s_macro_cond.append(
-            sklearn.metrics.f1_score(status_gt_list, status_extracted_list, average="macro")
+            sklearn.metrics.f1_score(
+                status_gt_list, status_extracted_list, average="macro"
+            )
         )
 
     return accs_cond, f1s_macro_cond
