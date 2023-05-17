@@ -76,7 +76,7 @@ The effect of changing the rate of infusion of propofol for induction of anaesth
 ### Missed interventions
 -"""
 
-PROMPT_V2 = """'List all clinical trial arms in the patient note that were missed in the Extracted interventions list. Each clinical trial arm name should be short and precise. If no additional clinical trial arms are found, return None\n'
+PROMPT_V2 = """'List all clinical trial arms in the patient note that were missed in the Extracted interventions list. Each clinical trial arm name should be short and precise. Only add clinical trial arms if you are absolutely certain they were missed. If no additional clinical trial arms are found, return None.\n'
 
 ### Patient Note
 Safety, tolerability, and immunogenicity after 1 and 2 doses of zoster vaccine in healthy adults ≥60 years of age.
