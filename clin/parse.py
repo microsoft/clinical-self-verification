@@ -26,6 +26,14 @@ def str_to_list(s):
 def convert_keys_to_lowercase(dicts_list):
     return [{k.lower(): dicts_list[j][k] for k in dicts_list[j]} for j in range(len(dicts_list))]
 
+def sample_shots_excluding_i(i: int, nums: np.ndarray, n_shots: int) -> np.ndarray:
+    nums_ = nums[~(nums == i)]
+    i_ = min(i, len(nums_) - n_shots)
+    samples = nums_[i_ : i_ + n_shots]
+    assert len(samples) == n_shots
+    assert not i in samples
+    return samples
+
 def list_medications(row) -> str:
         d = [('active', val) for val in str_to_list(row['active_medications'])] + \
             [('discontinued', val) for val in str_to_list(row['discontinued_medications'])] + \

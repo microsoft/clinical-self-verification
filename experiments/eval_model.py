@@ -30,7 +30,7 @@ from imodelsx import cache_save_utils
 
 
 # python experiments/01_eval_model.py --use_cache 0
-def eval_med_status(r, args, df, nums, dfe, n, llm):
+def eval_med_status(r, args, df, nums, n, llm):
     # perform basic extraction
     extractor = med_status.extract.Extractor()
     r["extracted_strs"] = [
@@ -56,20 +56,20 @@ def eval_med_status(r, args, df, nums, dfe, n, llm):
     # apply individual verifiers ####################################
     # apply omission verifier
     med_status_dict_list_ov = [
-        ov(dfe.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm_verify)
+        ov(df.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm_verify)
         for i in tqdm(range(n))
     ]
 
     # apply prune verifier
     med_status_dict_list_pv = [
-        pv(dfe.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm_verify)
+        pv(df.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm_verify)
         for i in tqdm(range(n))
     ]
 
     # apply evidence verifier
     med_status_and_evidence = [
         ev(
-            snippet=dfe.iloc[i]["snippet"],
+            snippet=df.iloc[i]["snippet"],
             bulleted_str=extracted_strs_orig[i],
             llm=llm_verify,
         )
@@ -82,7 +82,7 @@ def eval_med_status(r, args, df, nums, dfe, n, llm):
     logging.info("sequential verifiers...")
     med_status_dict_list_ov_ = [
         ov(
-            dfe.iloc[i]["snippet"],
+            df.iloc[i]["snippet"],
             bulleted_str=extracted_strs_orig[i],
             llm=llm_verify,
         )
@@ -95,7 +95,7 @@ def eval_med_status(r, args, df, nums, dfe, n, llm):
 
     med_status_dict_list_pv_ = [
         pv(
-            dfe.iloc[i]["snippet"],
+            df.iloc[i]["snippet"],
             bulleted_str=bulleted_str_list_ov_[i],
             llm=llm_verify,
         )
@@ -108,7 +108,7 @@ def eval_med_status(r, args, df, nums, dfe, n, llm):
 
     med_status_and_evidence_ = [
         ev(
-            snippet=dfe.iloc[i]["snippet"],
+            snippet=df.iloc[i]["snippet"],
             bulleted_str=bulleted_str_list_pv_[i],
             llm=llm_verify,
         )
@@ -121,7 +121,7 @@ def eval_med_status(r, args, df, nums, dfe, n, llm):
     logging.info("status verifier....")
     med_status_dict_list_sv = [
         sv(
-            dfe.iloc[i]["snippet"],
+            df.iloc[i]["snippet"],
             med_status_dict=med_status_dict_list_ev_[i],
             med_evidence_dict=med_evidence_dict_list_ev_[i],
             llm=llm_verify,
@@ -144,10 +144,10 @@ def eval_med_status(r, args, df, nums, dfe, n, llm):
             [
                 clin.eval.eval.calculate_precision_recall_from_lists(
                     *clin.eval.med_status.process_med_lists(
-                        med_status_results[k][i], dfe.iloc[i]
+                        med_status_results[k][i], df.iloc[i]
                     )
                 )
-                for i in range(len(dfe))
+                for i in range(len(df))
             ]
         )
         mets_dict_single = clin.eval.eval.aggregate_precision_recall(mets_df)
@@ -158,7 +158,7 @@ def eval_med_status(r, args, df, nums, dfe, n, llm):
     return r
 
 
-def eval_ebm(r, args, df, nums, dfe, n, llm):
+def eval_ebm(r, args, df, nums, n, llm):
     extractor = ebm.extract.Extractor()
     ov = ebm.omission.OmissionVerifier()
     pv = ebm.prune.PruneVerifier()
@@ -169,26 +169,25 @@ def eval_ebm(r, args, df, nums, dfe, n, llm):
     ]
 
     r["list_ov"] = [
-        ov(dfe.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm)
+        ov(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm)
         for i in tqdm(range(n))
     ]
 
     r["list_pv"] = [
-        pv(dfe.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm)
+        pv(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm)
         for i in tqdm(range(n))
     ]
 
     r["list_ov_pv"] = [
-        pv(dfe.iloc[i]["doc"], bullet_list=r["list_ov"][i], llm=llm)
+        pv(df.iloc[i]["doc"], bullet_list=r["list_ov"][i], llm=llm)
         for i in tqdm(range(n))
     ]
 
     r["dict_evidence_ov_pv_ev"] = [
-        ev(dfe.iloc[i]["doc"], bullet_list=r["list_ov_pv"][i], llm=llm)
+        ev(df.iloc[i]["doc"], bullet_list=r["list_ov_pv"][i], llm=llm)
         for i in tqdm(range(n))
     ]
     r["list_ov_pv_ev"] = [list(r["dict_evidence_ov_pv_ev"][i].keys()) for i in range(n)]
-
 
     # add metrics to r
     ks_list = [k for k in r.keys() if k.startswith("list_")]
@@ -198,20 +197,20 @@ def eval_ebm(r, args, df, nums, dfe, n, llm):
                 [
                     clin.eval.eval.calculate_precision_recall_from_lists(
                         *clin.eval.ebm.process_ebm_lists(
-                            r[k][i], dfe.iloc[i]["interventions"]
+                            r[k][i], df.iloc[i]["interventions"]
                         ),
                         verbose=False,
                     )
-                    for i in range(len(dfe))
+                    for i in range(len(df))
                 ]
             )
         )
         for k_met in mets_dict_single.keys():
-            r[k_met + "___" + k.replace('list_', '')] = mets_dict_single[k_met]
+            r[k_met + "___" + k.replace("list_", "")] = mets_dict_single[k_met]
     return r
 
 
-def get_data(args, seed=13):
+def get_data(args):
     if args.dataset_name in ["medication_status", "medication_attr", "coreference"]:
         dset = datasets.load_dataset("mitclinicalml/clinical-ie", args.dataset_name)
         df = pd.DataFrame.from_dict(dset["test"])
@@ -223,11 +222,10 @@ def get_data(args, seed=13):
     else:
         raise Exception(f"dataset {args.dataset_name} not recognized")
 
-    nums = np.arange(len(df)).tolist()
-    np.random.default_rng(seed=seed).shuffle(nums)
-    dfe = df.iloc[nums]
-    n = len(dfe)
-    return df, nums, dfe, n
+    nums = np.arange(len(df))
+    np.random.default_rng(seed=args.seed).shuffle(nums)
+    n = len(df)
+    return df, nums, n
 
 
 # initialize args
@@ -315,7 +313,7 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     # load text data
-    df, nums, dfe, n = get_data(args)
+    df, nums, n = get_data(args)
 
     # load model
     llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
@@ -330,9 +328,9 @@ if __name__ == "__main__":
 
     # evaluate
     if args.dataset_name == "medication_status":
-        r = eval_med_status(r, args, df, nums, dfe, n, llm)
+        r = eval_med_status(r, args, df, nums, n, llm)
     elif args.dataset_name == "ebm":
-        r = eval_ebm(r, args, df, nums, dfe, n, llm)
+        r = eval_ebm(r, args, df, nums, n, llm)
 
     # save results
     joblib.dump(

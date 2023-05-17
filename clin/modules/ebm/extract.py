@@ -29,12 +29,8 @@ def get_multishot_prompt(df, examples_nums_shot: List[int], ex_num: int):
 
 class Extractor:
     def __call__(self, i, df, nums, n_shots, llm) -> List[str]:
-        if i - n_shots < 0:
-            examples_nums_shot = nums[i - n_shots:] + nums[:i]
-        else:
-            examples_nums_shot = nums[i - n_shots: i]
-        ex_num = nums[i]
-        prompt = get_multishot_prompt(df, examples_nums_shot, ex_num)
+        examples_nums_shot = clin.parse.sample_shots_excluding_i(i, nums, n_shots)
+        prompt = get_multishot_prompt(df, examples_nums_shot, i)
         # print(prompt)
         bullet_str = llm(prompt)
         interventions = clin.parse.bullet_str_to_list(bullet_str)
