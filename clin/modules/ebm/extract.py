@@ -9,7 +9,7 @@ from clin.config import PATH_REPO
 
 
 def get_multishot_prompt(df, examples_nums_shot: List[int], ex_num: int):
-    prompt = 'Read each patient note and create a bulleted list of the interventions in the clinical trial. Intervention names should be simple and not contain any information in parentheses.\n'
+    prompt = 'Read each patient note and create a bulleted list of the interventions in the clinical trial. Intervention names should be simple, avoid acronyms, and not contain any information in parentheses.\n'
     for ex in examples_nums_shot:
         prompt += f'''### Patient note
 {df.iloc[ex]['doc']}

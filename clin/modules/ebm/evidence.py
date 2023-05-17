@@ -5,7 +5,6 @@ import clin.parse
 import clin.llm
 import joblib
 from os.path import join
-from clin.config import PATH_REPO
 
 PROMPT_V1 = """Find the span of text which corresponds to each extracted medication and its status. If no evidence is found, write "no evidence". Write a bullet for every extracted medication.
 
@@ -63,9 +62,9 @@ class EvidenceVerifier:
         ev_dict = clin.parse.bullet_str_with_quote_to_dict(bullet_str_extra)
         ev_dict = {
             k: v
-            for k, v in ev_dict.items() 
-            if v.lower() != "no evidence" # evidence found
-            and k.lower() in snippet.lower() # snippet contains trial arm name
+            for k, v in ev_dict.items()
+            if v.lower() != "no evidence"  # evidence found
+            and k.lower() in snippet.lower()  # snippet contains trial arm name
         }
 
         return ev_dict

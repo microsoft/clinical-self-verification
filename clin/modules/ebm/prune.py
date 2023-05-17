@@ -93,27 +93,71 @@ def _prune_list_hardcoded(l):
 
     # don't keep anything with the word control
     l = [x for x in l if not "control" in x.lower()]
-    
+
     # don't keep duplicates but preserve order
     l = list(dict.fromkeys(l))
 
     # strip each string
     l = [x.strip() for x in l]
 
+    # remove empty strings
+    l = [x for x in l if x and not x.lower().startswith('none')]
+
     # if any string is contained within another one, remove the longer one, but preserve the list order
     # l_s = sorted(l, key=len, reverse=False)
     # l_s = [
-        # l_s[i] for i in range(len(l_s)) if not any([l_s[i] in y for y in l_s[i + 1 :]])
+    # l_s[i] for i in range(len(l_s)) if not any([l_s[i] in y for y in l_s[i + 1 :]])
     # ]
     # l = [x for x in l if x in l_s]
     return l
 
 
+PROMPT_CLEAN = """Return the list of clinical interventions removing the units from each element. If the intervention is a measurement and not actually a clinicial intervention, then don't return it.
+    
+### Interventions list
+- zoster vaccine
+- placebo
+
+### Cleaned interventions list
+- zoster vaccine
+- placebo
+
+### Interventions list
+- 2,000 mg l⁻¹ clove solution
+- 100 ml h-1 l⁻¹ clove solution
+- 500 ml h-1 l⁻¹ clove solution
+
+### Cleaned interventions list
+- l⁻¹ clove solution
+- l⁻¹ clove solution
+- l⁻¹ clove solution
+- l⁻¹ clove solution
+
+### Interventions list
+- 1 mg daily
+- 100 mg twice daily
+- placebo
+- bupropion
+
+### Cleaned interventions list
+- placebo
+- bupropion
+
+### Interventions list
+{bulleted_str}
+
+##Cleaned interventions list
+-"""
+
+
 class PruneVerifier:
     def __init__(self):
         self.prompt = PROMPT_V2
+        self.prompt_clean = PROMPT_CLEAN
 
-    def __call__(self, snippet, bullet_list, llm, verbose=False) -> List[str]:
+    def __call__(
+        self, snippet, bullet_list, llm, apply_cleaning_step=True, verbose=False
+    ) -> List[str]:
         prompt_ex = self.prompt.format(
             snippet=snippet, bulleted_str=clin.parse.list_to_bullet_str(bullet_list)
         )
@@ -128,7 +172,18 @@ class PruneVerifier:
             x for x in bullet_list if not x.lower() in extra_list_lower
         ]
         bullet_list_pruned = _prune_list_hardcoded(bullet_list_pruned)
-        return bullet_list_pruned
+
+        if apply_cleaning_step:
+            prompt_clean = self.prompt_clean.format(
+                bulleted_str=clin.parse.list_to_bullet_str(bullet_list_pruned)
+            )
+            bullet_str_clean = llm(prompt_clean)
+            if "###" in bullet_str_clean:
+                bullet_str_clean = bullet_str_clean.split("###")[0]
+            bullet_list_clean = clin.parse.bullet_str_to_list(bullet_str_clean)
+            return _prune_list_hardcoded(bullet_list_clean)
+        else:
+            return bullet_list_pruned
 
 
 if __name__ == "__main__":
@@ -138,4 +193,3 @@ if __name__ == "__main__":
     snippet = "Anti-emetic efficacy of prophylactic granisetron compared with perphenazine for the prevention of post-operative vomiting in children.\n\nWe have compared the efficacy of granisetron with perphenazine in the prevention of vomiting after tonsillectomy with or without adenoidectomy in children. In a prospective, randomized, double-blind study, 90 paediatric patients, ASA I, aged 4-10 years, received granisetron 40 mg kg-1 or perphenazine 70 mg kg-1 (n = 45 each) intravenously immediately after an inhalation induction of anaesthesia. A standard general anaesthetic technique was employed throughout. A complete response, defined as no emesis with no need for another rescue antiemetic, during the first 3 h (0-3 h) after anesthesia was 87% with granisetron and 78% with perphenazine (P = 0.204). The corresponding incidence during the next 21 h (3-24 h) after anaesthesia was 87% and 62% (P = 0.007). No clinically serious adverse events were observed in any of the groups. We conclude that granisetron is a better anti-emetic than perphenazine for the long-term prevention of post-operative vomiting in children undergoing general anaesthesia for tonsillectomy."
     arms_new = v(snippet, arms_list, llm, verbose=True)
     print("arms_new", arms_new)
-#
