@@ -25,7 +25,7 @@ import time
 
 # from mprompt.config import CACHE_DIR
 CACHE_DIR = "/home/chansingh/clin/CACHE_OPENAI"
-LLM_REPEAT_DELAY = 1  # how long to wait before recalling a failed llm call
+LLM_REPEAT_DELAY = 5  # how long to wait before recalling a failed llm call
 
 # repo_dir = join(dirname(dirname(__file__)))
 
@@ -51,7 +51,7 @@ def repeatedly_call_with_delay(llm_call, delay=LLM_REPEAT_DELAY):
         response = None
         while response is None:
             try:
-                response = llm_call(*args, **kwargs)
+                response = llm_call(*args,  **kwargs)
 
                 # fix for when this function was returning response rather than string
                 if response is not None and not isinstance(response, str):

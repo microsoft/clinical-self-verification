@@ -21,6 +21,7 @@ import clin.llm
 import clin.parse
 import clin.eval.eval
 import clin.eval.med_status
+import clin.eval.ebm
 from clin.modules import med_status
 from clin.modules import ebm
 from clin.modules.med_status import extract, omission, prune, evidence, status
@@ -187,6 +188,26 @@ def eval_ebm(r, args, df, nums, dfe, n, llm):
         for i in tqdm(range(n))
     ]
     r["list_ov_pv_ev"] = [list(r["dict_evidence_ov_pv_ev"][i].keys()) for i in range(n)]
+
+
+    # add metrics to r
+    ks_list = [k for k in r.keys() if k.startswith("list_")]
+    for k in ks_list:
+        mets_dict_single = clin.eval.eval.aggregate_precision_recall(
+            pd.DataFrame(
+                [
+                    clin.eval.eval.calculate_precision_recall_from_lists(
+                        *clin.eval.ebm.process_ebm_lists(
+                            r[k][i], dfe.iloc[i]["interventions"]
+                        ),
+                        verbose=False,
+                    )
+                    for i in range(len(dfe))
+                ]
+            )
+        )
+        for k_met in mets_dict_single.keys():
+            r[k_met + "___" + k.replace('list_', '')] = mets_dict_single[k_met]
     return r
 
 
