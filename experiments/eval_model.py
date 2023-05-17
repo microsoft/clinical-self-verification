@@ -225,7 +225,12 @@ def add_main_args(parser):
     )
 
     # training misc args
-    parser.add_argument("--seed", type=int, default=1, help="random seed")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=1,
+        help="random seed (stratifies different llm regenerations, although openai doesn't actually seed)",
+    )
     parser.add_argument(
         "--save_dir", type=str, default="results", help="directory for saving"
     )
@@ -292,7 +297,7 @@ if __name__ == "__main__":
     df, nums, dfe, n = get_data(args)
 
     # load model
-    llm = clin.llm.get_llm(args.checkpoint)
+    llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
 
     # set up saving dictionary + save params file
     r = defaultdict(list)

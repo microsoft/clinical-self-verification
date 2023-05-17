@@ -30,11 +30,11 @@ LLM_REPEAT_DELAY = 1  # how long to wait before recalling a failed llm call
 # repo_dir = join(dirname(dirname(__file__)))
 
 
-def get_llm(checkpoint):
+def get_llm(checkpoint, seed=1):
     if checkpoint.startswith("text-da"):
-        return llm_openai(checkpoint)
+        return llm_openai(checkpoint, seed=seed)
     elif checkpoint.startswith("gpt-3") or checkpoint.startswith("gpt-4"):
-        return llm_openai_chat(checkpoint)
+        return llm_openai_chat(checkpoint, seed=seed)
     else:
         return llm_hf(checkpoint)
 
@@ -63,23 +63,21 @@ def repeatedly_call_with_delay(llm_call, delay=LLM_REPEAT_DELAY):
     return wrapper
 
 
-def llm_openai(checkpoint="text-davinci-003") -> LLM:
+def llm_openai(checkpoint="text-davinci-003", seed=1) -> LLM:
     class LLM_OpenAI:
-        def __init__(self, checkpoint, cache_dir=join(CACHE_DIR, "cache_openai")):
+        def __init__(self, checkpoint, seed):
+            self.cache_dir = join(
+                CACHE_DIR, "cache_openai", f'{checkpoint.replace("/", "_")}___{seed}'
+            )
             self.checkpoint = checkpoint
-            self.cache_dir = cache_dir
 
         @repeatedly_call_with_delay
-        def __call__(self, prompt: str, max_new_tokens=250, seed=1, do_sample=True, stop=None):
+        def __call__(self, prompt: str, max_new_tokens=250, do_sample=True, stop=None):
             # cache
             os.makedirs(self.cache_dir, exist_ok=True)
             hash_str = hashlib.sha256(prompt.encode()).hexdigest()
             cache_file = join(
-                self.cache_dir, f"{hash_str}__num_tok={max_new_tokens}__seed={seed}.pkl"
-            )
-            cache_file_raw = join(
-                self.cache_dir,
-                f"raw_{hash_str}__num_tok={max_new_tokens}__seed={seed}.pkl",
+                self.cache_dir, f"{hash_str}__num_tok={max_new_tokens}.pkl"
             )
             if os.path.exists(cache_file):
                 return pkl.load(open(cache_file, "rb"))
@@ -98,29 +96,26 @@ def llm_openai(checkpoint="text-davinci-003") -> LLM:
             response_text = response["choices"][0]["text"]
 
             pkl.dump(response_text, open(cache_file, "wb"))
-            pkl.dump(
-                {"prompt": prompt, "response_text": response_text},
-                open(cache_file_raw, "wb"),
-            )
             return response_text
 
-    return LLM_OpenAI(checkpoint)
+    return LLM_OpenAI(checkpoint, seed)
 
 
-def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
+def llm_openai_chat(checkpoint="gpt-3.5-turbo", seed=1) -> LLM:
     class LLM_Chat:
         """Chat models take a different format: https://platform.openai.com/docs/guides/chat/introduction"""
 
-        def __init__(self, checkpoint, cache_dir=join(CACHE_DIR, "cache_openai")):
+        def __init__(self, checkpoint, seed):
+            self.cache_dir = join(
+                CACHE_DIR, "cache_openai", f'{checkpoint.replace("/", "_")}___{seed}'
+            )
             self.checkpoint = checkpoint
-            self.cache_dir = cache_dir
 
         @repeatedly_call_with_delay
         def __call__(
             self,
             prompts_list: List[Dict[str, str]],
             max_new_tokens=250,
-            seed=1,
             do_sample=True,
             stop=None,
         ):
@@ -158,7 +153,7 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
             hash_str = hashlib.sha256(dict_as_str.encode()).hexdigest()
             cache_file_raw = join(
                 self.cache_dir,
-                f"chat__raw_{hash_str}__num_tok={max_new_tokens}__seed={seed}.pkl",
+                f"chat__raw_{hash_str}__num_tok={max_new_tokens}.pkl",
             )
             if os.path.exists(cache_file_raw):
                 print("cached!")
@@ -180,7 +175,7 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo") -> LLM:
             pkl.dump(response, open(cache_file_raw, "wb"))
             return response["choices"][0]["message"]["content"]
 
-    return LLM_Chat(checkpoint)
+    return LLM_Chat(checkpoint, seed)
 
 
 def llm_hf(checkpoint="google/flan-t5-xl") -> LLM:
