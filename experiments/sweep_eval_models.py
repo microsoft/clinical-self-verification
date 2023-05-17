@@ -2,9 +2,7 @@ from imodelsx import submit_utils
 from os.path import dirname, join
 import os.path
 repo_dir = dirname(dirname(os.path.abspath(__file__)))
-
-# Showcasing different ways to sweep over arguments
-# Can pass any empty dict for any of these to avoid sweeping
+# python experiments/eval_model.py --dataset_name ebm
 
 # List of values to sweep over (sweeps over all combinations of these)
 params_shared_dict = {
@@ -12,7 +10,8 @@ params_shared_dict = {
     'save_dir': [join(repo_dir, 'results')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
     'n_shots': [1, 5], # [1, 5, 10]
-    'checkpoint': ['gpt-4-0314', 'text-davinci-003'], # gpt-3.5-turbo
+    'checkpoint': ['text-davinci-003', 'gpt-4-0314'], # gpt-3.5-turbo, gpt-4-0314, text-davinci-003
+    'dataset_name': ['ebm', 'medication_status'], # medication_status, ebm
 }
 
 # List of tuples to sweep over (these values are coupled, and swept over together)
@@ -27,6 +26,6 @@ args_list = submit_utils.get_args_list(
 )
 submit_utils.run_args_list(
     args_list,
-    script_name=join(repo_dir, 'experiments', '01_eval_model.py'),
+    script_name=join(repo_dir, 'experiments', 'eval_model.py'),
     actually_run=True,
 )

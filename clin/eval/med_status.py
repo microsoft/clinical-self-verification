@@ -10,10 +10,35 @@ import datasets
 import time
 import openai
 import numpy as np
-from typing import List, Dict
+from typing import List, Dict, Set
 from collections import defaultdict
 import clin.parse
 import sklearn.metrics
+
+
+def add_status_eval(r, dfe):
+    """Add status eval by aggregating over all columns with dict_ in the name"""
+    d = defaultdict(list)
+    dict_columns = [
+        k
+        for k in r.keys()
+        if k.startswith("dict_") and not k.startswith("dict_evidence")
+    ]
+    # common_meds_status_gt_dict = clin.eval.get_common_medications(r[dict_columns].values.flatten().tolist(), dfe)
+    for i in range(r.shape[0]):
+        row = r.iloc[i]
+        med_status_dicts_list = [row[k] for k in dict_columns]
+        common_meds_status_gt_dict = get_common_medications(med_status_dicts_list, dfe)
+        accs_cond, f1s_macro_cond = eval_medication_status(
+            med_status_dicts_list, common_meds_status_gt_dict
+        )
+        for j, setting in enumerate(dict_columns):
+            setting_name = setting.replace("dict_", "")
+            d[f"status_acc_cond___{setting_name}"].append(accs_cond[j])
+            d[f"status_f1_macro_cond___{setting_name}"].append(f1s_macro_cond[j])
+    for k in d:
+        r[k] = d[k]
+    return r
 
 
 def process_med_lists(
@@ -39,16 +64,17 @@ def process_med_lists(
 
 
 def get_common_medications(
-    med_status_dicts_list: List[List[Dict[str, str]]], dfe: pd.DataFrame
-):
-    # get the common retrieved medications for each row by all models
+    med_status_dicts_list: List[List[Dict[str, str]]],
+    dfe: pd.DataFrame
+) -> List[Set[str]]:
+    '''get the common retrieved medications for each row by all models
+    '''
     n_runs_to_compare = len(med_status_dicts_list)
     n = len(dfe)
     common_meds = []
     for i in range(n_runs_to_compare):
-        med_status_dicts = clin.parse.convert_keys_to_lowercase(
-            med_status_dicts_list[i]
-        )
+        med_status_dict_list = med_status_dicts_list[i]
+        med_status_dicts = clin.parse.convert_keys_to_lowercase(med_status_dict_list)
 
         if i == 0:
             common_meds = [set(med_status_dicts[j].keys()) for j in range(n)]

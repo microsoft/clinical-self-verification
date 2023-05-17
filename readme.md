@@ -6,19 +6,19 @@ Based on [cookiecutter-data-science](https://github.com/drivendata/cookiecutter-
 # Organization
 - `clin`: contains main evaluation code
   - `clin/modules`: code for prompted modules for extraction and self-verification
-- `experiments`: code for runnning experiments (e.g. loading data, training models, evaluating models)
-- `scripts`: scripts for experiment sweeps (e.g. python scripts that launch jobs in `experiments` folder with different hyperparams)
+- `experiments`
+  - `scripts/eval_model.py`: code for runnning experiments (e.g. loading data, training models, evaluating models)
+  - `experiments/sweep_eval_models.py`: script for sweeps (e.g. python scripts that launch experiments with different hyperparams)
 - `notebooks`: jupyter notebooks for analyzing results and making figures
 - `tests`: unit tests
 
 # Setup
 - clone and run `pip install -e .`, resulting in a package named `clin` that can be imported
     - see `setup.py` for dependencies, not all are required
-- example run: run `python scripts/01_eval_models.py` (which calls `experiments/01_eval_model.py`) then view the results in `notebooks/01_eval_results.ipynb`
+- example run: run `python scripts/sweep_eval_models.py` (which calls `scripts/eval_model.py`) then view the results in `notebooks/med_status.ipynb`
 - keep tests upated and run using `pytest`
 
 # Features
-- `scripts` sweep over hyperparameters using python code
 - experiments automatically cache runs that have already completed
     - caching uses the (**non-default**) arguments in the argparse namespace
 - notebooks can easily evaluate results aggregated over multiple experiments using pandas
