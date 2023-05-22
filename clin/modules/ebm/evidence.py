@@ -3,7 +3,6 @@ import numpy as np
 from typing import Dict, List, Tuple
 import clin.parse
 import clin.llm
-import joblib
 from os.path import join
 
 PROMPT_V1 = """Find the span of text which corresponds to each extracted medication and its status. If no evidence is found, write "no evidence". Write a bullet for every extracted medication.

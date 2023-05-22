@@ -119,7 +119,7 @@ def eval_medication_status(
     # compute conditional accuracy for all rows
     accs_cond = []
     f1s_macro_cond = []
-    for i in tqdm(range(n_runs_to_compare)):
+    for i in range(n_runs_to_compare):
         status_extracted_list = []
         status_gt_list = []
         for j in range(n):

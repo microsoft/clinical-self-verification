@@ -142,3 +142,4 @@ slurm_files_out/
 scripts/data/
 
 data/ebm/ebm*
+results*

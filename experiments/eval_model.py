@@ -5,16 +5,10 @@ import random
 from collections import defaultdict
 from os.path import join
 import numpy as np
-from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.model_selection import train_test_split
 import joblib
-import imodels
-import inspect
 import datasets
 import pandas as pd
 from tqdm import tqdm
-import time
-from typing import List
 import torch
 import clin.config
 import clin.llm
@@ -30,7 +24,7 @@ from imodelsx import cache_save_utils
 
 
 # python experiments/01_eval_model.py --use_cache 0
-def eval_med_status(r, args, df, nums, n, llm):
+def eval_med_status(r, args, df, nums, n, llm, llm_verify):
     # perform basic extraction
     extractor = med_status.extract.Extractor()
     r["extracted_strs"] = [
@@ -46,7 +40,6 @@ def eval_med_status(r, args, df, nums, n, llm):
         clin.parse.parse_response_medication_list(extracted_strs_orig[i])
         for i in range(n)
     ]
-    llm_verify = clin.llm.get_llm(args.checkpoint_verify)
 
     ov = med_status.omission.OmissionVerifier()
     pv = med_status.prune.PruneVerifier()
@@ -158,7 +151,7 @@ def eval_med_status(r, args, df, nums, n, llm):
     return r
 
 
-def eval_ebm(r, args, df, nums, n, llm):
+def eval_ebm(r, args, df, nums, n, llm, llm_verify):
     extractor = ebm.extract.Extractor()
     ov = ebm.omission.OmissionVerifier()
     pv = ebm.prune.PruneVerifier()
@@ -169,22 +162,22 @@ def eval_ebm(r, args, df, nums, n, llm):
     ]
 
     r["list_ov"] = [
-        ov(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm)
+        ov(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm_verify)
         for i in tqdm(range(n))
     ]
 
     r["list_pv"] = [
-        pv(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm)
+        pv(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm_verify)
         for i in tqdm(range(n))
     ]
 
     r["list_ov_pv"] = [
-        pv(df.iloc[i]["doc"], bullet_list=r["list_ov"][i], llm=llm)
+        pv(df.iloc[i]["doc"], bullet_list=r["list_ov"][i], llm=llm_verify)
         for i in tqdm(range(n))
     ]
 
     r["dict_evidence_ov_pv_ev"] = [
-        ev(df.iloc[i]["doc"], bullet_list=r["list_ov_pv"][i], llm=llm)
+        ev(df.iloc[i]["doc"], bullet_list=r["list_ov_pv"][i], llm=llm_verify)
         for i in tqdm(range(n))
     ]
     r["list_ov_pv_ev"] = [list(r["dict_evidence_ov_pv_ev"][i].keys()) for i in range(n)]
@@ -264,7 +257,7 @@ def add_main_args(parser):
     parser.add_argument(
         "--checkpoint_verify",
         type=str,  # choices=['gpt-4-0314', 'gpt-3.5-turbo', 'text-davinci-003',],
-        default="text-davinci-003",
+        default=None, # if not specified, will default to the value of args.checkpoint
         help="name of llm checkpoint",
     )
 
@@ -317,6 +310,9 @@ if __name__ == "__main__":
 
     # load model
     llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
+    if args.checkpoint_verify is None:
+        args.checkpoint_verify = args.checkpoint
+    llm_verify = clin.llm.get_llm(args.checkpoint_verify, seed=args.seed)
 
     # set up saving dictionary + save params file
     r = defaultdict(list)
@@ -328,9 +324,9 @@ if __name__ == "__main__":
 
     # evaluate
     if args.dataset_name == "medication_status":
-        r = eval_med_status(r, args, df, nums, n, llm)
+        r = eval_med_status(r, args, df, nums, n, llm, llm_verify)
     elif args.dataset_name == "ebm":
-        r = eval_ebm(r, args, df, nums, n, llm)
+        r = eval_ebm(r, args, df, nums, n, llm, llm_verify)
 
     # save results
     joblib.dump(
