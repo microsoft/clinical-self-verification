@@ -31,11 +31,11 @@ LLM_REPEAT_DELAY = 5  # how long to wait before recalling a failed llm call
 # repo_dir = join(dirname(dirname(__file__)))
 
 
-def get_llm(checkpoint, seed=1):
+def get_llm(checkpoint, seed=1, role: str=None):
     if checkpoint.startswith("text-da"):
         return llm_openai(checkpoint, seed=seed)
     elif checkpoint.startswith("gpt-3") or checkpoint.startswith("gpt-4"):
-        return llm_openai_chat(checkpoint, seed=seed)
+        return llm_openai_chat(checkpoint, seed=seed, role=role)
     else:
         return llm_hf(
             checkpoint, seed=seed
@@ -104,15 +104,16 @@ def llm_openai(checkpoint="text-davinci-003", seed=1) -> LLM:
     return LLM_OpenAI(checkpoint, seed)
 
 
-def llm_openai_chat(checkpoint="gpt-3.5-turbo", seed=1) -> LLM:
+def llm_openai_chat(checkpoint="gpt-3.5-turbo", seed=1, role=None) -> LLM:
     class LLM_Chat:
         """Chat models take a different format: https://platform.openai.com/docs/guides/chat/introduction"""
 
-        def __init__(self, checkpoint, seed):
+        def __init__(self, checkpoint, seed, role):
             self.cache_dir = join(
                 CACHE_DIR, "cache_openai", f'{checkpoint.replace("/", "_")}___{seed}'
             )
             self.checkpoint = checkpoint
+            self.role = role
 
         @repeatedly_call_with_delay
         def __call__(
@@ -137,8 +138,11 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo", seed=1) -> LLM:
                 ]
             """
             if isinstance(prompts_list, str):
+                role = self.role
+                if role is None:
+                    role = "You are a helpful assistant."
                 prompts_list = [
-                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "system", "content": role},
                     {"role": "user", "content": prompts_list},
                 ]
 
@@ -177,7 +181,7 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo", seed=1) -> LLM:
             pkl.dump(response, open(cache_file, "wb"))
             return response
 
-    return LLM_Chat(checkpoint, seed)
+    return LLM_Chat(checkpoint, seed, role)
 
 
 def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:

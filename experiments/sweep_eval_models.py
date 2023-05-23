@@ -7,7 +7,7 @@ repo_dir = dirname(dirname(os.path.abspath(__file__)))
 # List of values to sweep over (sweeps over all combinations of these)
 params_shared_dict = {
     'seed': [1, 2, 3], # 1, 2, 3
-    'save_dir': [join(repo_dir, 'results_gpt4_same')],
+    'save_dir': [join(repo_dir, 'results_gpt4_same_expert')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
     'checkpoint': ['gpt-4-0314', 'text-davinci-003'], # gpt-3.5-turbo, gpt-4-0314, text-davinci-003
     'n_shots': [1, 5], # [1, 5, 10]
