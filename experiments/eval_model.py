@@ -24,7 +24,9 @@ from imodelsx import cache_save_utils
 
 
 # python experiments/01_eval_model.py --use_cache 0
-def eval_med_status(r, args, df, nums, n, llm, llm_verify):
+def eval_med_status(r, args, df, nums, n):
+    llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
+
     # perform basic extraction
     extractor = med_status.extract.Extractor()
     r["extracted_strs"] = [
@@ -34,6 +36,13 @@ def eval_med_status(r, args, df, nums, n, llm, llm_verify):
     #     clin.parse.parse_response_medication_list(r["extracted_strs"][i])
     #     for i in range(len(df))
     # ]
+
+    # load llm for verification
+    if args.checkpoint_verify is None:
+        args.checkpoint_verify = args.checkpoint
+    llm = clin.llm.get_llm(
+        args.checkpoint_verify, seed=args.seed, role=args.role_verify
+    )
 
     extracted_strs_orig = r["extracted_strs"]
     med_status_dict_list_orig = [
@@ -49,13 +58,13 @@ def eval_med_status(r, args, df, nums, n, llm, llm_verify):
     # apply individual verifiers ####################################
     # apply omission verifier
     med_status_dict_list_ov = [
-        ov(df.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm_verify)
+        ov(df.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm)
         for i in tqdm(range(n))
     ]
 
     # apply prune verifier
     med_status_dict_list_pv = [
-        pv(df.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm_verify)
+        pv(df.iloc[i]["snippet"], bulleted_str=extracted_strs_orig[i], llm=llm)
         for i in tqdm(range(n))
     ]
 
@@ -64,7 +73,7 @@ def eval_med_status(r, args, df, nums, n, llm, llm_verify):
         ev(
             snippet=df.iloc[i]["snippet"],
             bulleted_str=extracted_strs_orig[i],
-            llm=llm_verify,
+            llm=llm,
         )
         for i in tqdm(range(n))
     ]
@@ -77,7 +86,7 @@ def eval_med_status(r, args, df, nums, n, llm, llm_verify):
         ov(
             df.iloc[i]["snippet"],
             bulleted_str=extracted_strs_orig[i],
-            llm=llm_verify,
+            llm=llm,
         )
         for i in tqdm(range(n))
     ]
@@ -90,7 +99,7 @@ def eval_med_status(r, args, df, nums, n, llm, llm_verify):
         pv(
             df.iloc[i]["snippet"],
             bulleted_str=bulleted_str_list_ov_[i],
-            llm=llm_verify,
+            llm=llm,
         )
         for i in tqdm(range(n))
     ]
@@ -103,7 +112,7 @@ def eval_med_status(r, args, df, nums, n, llm, llm_verify):
         ev(
             snippet=df.iloc[i]["snippet"],
             bulleted_str=bulleted_str_list_pv_[i],
-            llm=llm_verify,
+            llm=llm,
         )
         for i in tqdm(range(n))
     ]
@@ -117,7 +126,7 @@ def eval_med_status(r, args, df, nums, n, llm, llm_verify):
             df.iloc[i]["snippet"],
             med_status_dict=med_status_dict_list_ev_[i],
             med_evidence_dict=med_evidence_dict_list_ev_[i],
-            llm=llm_verify,
+            llm=llm,
         )
         for i in tqdm(range(n))
     ]
@@ -151,33 +160,41 @@ def eval_med_status(r, args, df, nums, n, llm, llm_verify):
     return r
 
 
-def eval_ebm(r, args, df, nums, n, llm, llm_verify):
+def eval_ebm(r, args, df, nums, n):
     extractor = ebm.extract.Extractor()
     ov = ebm.omission.OmissionVerifier()
     pv = ebm.prune.PruneVerifier()
     ev = ebm.evidence.EvidenceVerifier()
 
+    llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
+
     r["list_original"] = [
         extractor(i, df, nums, args.n_shots, llm) for i in tqdm(range(len(df)))
     ]
 
+    if args.checkpoint_verify is None:
+        args.checkpoint_verify = args.checkpoint
+    llm = clin.llm.get_llm(
+        args.checkpoint_verify, seed=args.seed, role=args.role_verify
+    )
+
     r["list_ov"] = [
-        ov(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm_verify)
+        ov(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm)
         for i in tqdm(range(n))
     ]
 
     r["list_pv"] = [
-        pv(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm_verify)
+        pv(df.iloc[i]["doc"], bullet_list=r["list_original"][i], llm=llm)
         for i in tqdm(range(n))
     ]
 
     r["list_ov_pv"] = [
-        pv(df.iloc[i]["doc"], bullet_list=r["list_ov"][i], llm=llm_verify)
+        pv(df.iloc[i]["doc"], bullet_list=r["list_ov"][i], llm=llm)
         for i in tqdm(range(n))
     ]
 
     r["dict_evidence_ov_pv_ev"] = [
-        ev(df.iloc[i]["doc"], bullet_list=r["list_ov_pv"][i], llm=llm_verify)
+        ev(df.iloc[i]["doc"], bullet_list=r["list_ov_pv"][i], llm=llm)
         for i in tqdm(range(n))
     ]
     r["list_ov_pv_ev"] = [list(r["dict_evidence_ov_pv_ev"][i].keys()) for i in range(n)]
@@ -257,8 +274,14 @@ def add_main_args(parser):
     parser.add_argument(
         "--checkpoint_verify",
         type=str,  # choices=['gpt-4-0314', 'gpt-3.5-turbo', 'text-davinci-003',],
-        default=None, # if not specified, will default to the value of args.checkpoint
-        help="name of llm checkpoint",
+        default=None,  # if not specified, will default to the value of args.checkpoint
+        help="name of llm checkpoint used for verification",
+    )
+    parser.add_argument(
+        "--role_verify",
+        type=str,
+        default=None,
+        help="role of llm checkpoint used for verification",
     )
 
     # prompt args
@@ -308,12 +331,6 @@ if __name__ == "__main__":
     # load text data
     df, nums, n = get_data(args)
 
-    # load model
-    llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
-    if args.checkpoint_verify is None:
-        args.checkpoint_verify = args.checkpoint
-    llm_verify = clin.llm.get_llm(args.checkpoint_verify, seed=args.seed)
-
     # set up saving dictionary + save params file
     r = defaultdict(list)
     r.update(vars(args))
@@ -324,9 +341,9 @@ if __name__ == "__main__":
 
     # evaluate
     if args.dataset_name == "medication_status":
-        r = eval_med_status(r, args, df, nums, n, llm, llm_verify)
+        r = eval_med_status(r, args, df, nums, n)
     elif args.dataset_name == "ebm":
-        r = eval_ebm(r, args, df, nums, n, llm, llm_verify)
+        r = eval_ebm(r, args, df, nums, n)
 
     # save results
     joblib.dump(

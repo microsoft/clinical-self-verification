@@ -7,12 +7,12 @@ repo_dir = dirname(dirname(os.path.abspath(__file__)))
 # List of values to sweep over (sweeps over all combinations of these)
 params_shared_dict = {
     'seed': [1, 2, 3], # 1, 2, 3
-    'save_dir': [join(repo_dir, 'results_gpt4_same_expert')],
+    'save_dir': [join(repo_dir, 'results')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
-    'checkpoint': ['gpt-4-0314', 'text-davinci-003'], # gpt-3.5-turbo, gpt-4-0314, text-davinci-003
+    'checkpoint': ['chaoyi-wu/PMC_LLAMA_7B'], # gpt-4-0314, text-davinci-003, chaoyi-wu/PMC_LLAMA_7B, gpt-3.5-turbo
     'n_shots': [1, 5], # [1, 5, 10]
-    # 'dataset_name': ['medication_status'], # medication_status, ebm
     'dataset_name': ['ebm', 'medication_status'], # medication_status, ebm
+    'role_verify': ['"You are an expert medical scribe."'],
 }
 
 # List of tuples to sweep over (these values are coupled, and swept over together)
@@ -29,7 +29,7 @@ submit_utils.run_args_list(
     args_list,
     script_name=join(repo_dir, 'experiments', 'eval_model.py'),
     actually_run=True,
-    n_cpus=3,
+    # n_cpus=3,
     # shuffle=False,
     # reverse=True
 )

@@ -31,7 +31,7 @@ LLM_REPEAT_DELAY = 5  # how long to wait before recalling a failed llm call
 # repo_dir = join(dirname(dirname(__file__)))
 
 
-def get_llm(checkpoint, seed=1, role: str=None):
+def get_llm(checkpoint, seed=1, role: str = None):
     if checkpoint.startswith("text-da"):
         return llm_openai(checkpoint, seed=seed)
     elif checkpoint.startswith("gpt-3") or checkpoint.startswith("gpt-4"):
@@ -185,18 +185,24 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo", seed=1, role=None) -> LLM:
 
 
 def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
-    def _get_tokenizer(checkpoint):
-        if "facebook/opt" in checkpoint:
-            # opt can't use fast tokenizer
-            # https://huggingface.co/docs/transformers/model_doc/opt
-            return AutoTokenizer.from_pretrained(checkpoint, use_fast=False)
-        else:
-            return AutoTokenizer.from_pretrained(checkpoint, use_fast=True)
-
     class LLM_HF:
         def __init__(self, checkpoint, seed):
-            _checkpoint: str = checkpoint
-            self._tokenizer = _get_tokenizer(_checkpoint)
+            # set tokenizer
+            if "facebook/opt" in checkpoint:
+                # opt can't use fast tokenizer
+                self._tokenizer = AutoTokenizer.from_pretrained(
+                    checkpoint, use_fast=False
+                )
+            elif "PMC_LLAMA" in checkpoint:
+                self._tokenizer = transformers.LlamaTokenizer.from_pretrained(
+                    "chaoyi-wu/PMC_LLAMA_7B"
+                )
+            else:
+                self._tokenizer = AutoTokenizer.from_pretrained(
+                    checkpoint, use_fast=True
+                )
+
+            # set checkpoint
             if "google/flan" in checkpoint:
                 self._model = T5ForConditionalGeneration.from_pretrained(
                     checkpoint, device_map="auto", torch_dtype=torch.float16
@@ -207,6 +213,7 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
                 self._model = AutoModelForCausalLM.from_pretrained(
                     checkpoint, device_map="auto", torch_dtype=torch.float16
                 )
+            self.checkpoint = checkpoint
             self.cache_dir = join(
                 CACHE_DIR, "cache_hf", f'{checkpoint.replace("/", "_")}___{seed}'
             )
@@ -219,47 +226,51 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
             max_new_tokens=20,
             do_sample=False,
         ) -> str:
-            # cache
-            os.makedirs(self.cache_dir, exist_ok=True)
-            hash_str = hashlib.sha256(prompt.encode()).hexdigest()
-            cache_file = join(
-                self.cache_dir, f"{hash_str}__num_tok={max_new_tokens}.pkl"
-            )
-            if os.path.exists(cache_file):
-                return pkl.load(open(cache_file, "rb"))
+            with torch.no_grad():
+                # cache
+                os.makedirs(self.cache_dir, exist_ok=True)
+                hash_str = hashlib.sha256(prompt.encode()).hexdigest()
+                cache_file = join(
+                    self.cache_dir, f"{hash_str}__num_tok={max_new_tokens}.pkl"
+                )
+                if os.path.exists(cache_file):
+                    return pkl.load(open(cache_file, "rb"))
 
-            if stop is not None:
-                raise ValueError("stop kwargs are not permitted.")
-            inputs = self._tokenizer(
-                prompt, return_tensors="pt", return_attention_mask=True
-            ).to(
-                self._model.device
-            )  # .input_ids.to("cuda")
-            # stopping_criteria = StoppingCriteriaList([MaxLengthCriteria(max_length=max_tokens)])
-            # outputs = self._model.generate(input_ids, max_length=max_tokens, stopping_criteria=stopping_criteria)
-            # print('pad_token', self._tokenizer.pad_token)
-            if self._tokenizer.pad_token_id is None:
-                self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
-                torch.manual_seed(0)
-            outputs = self._model.generate(
-                **inputs,
-                max_new_tokens=max_new_tokens,
-                do_sample=do_sample,
-                # pad_token=self._tokenizer.pad_token,
-                pad_token_id=self._tokenizer.pad_token_id,
-                # top_p=0.92,
-                # top_k=0
-            )
-            out_str = self._tokenizer.decode(outputs[0])
-            if "facebook/opt" in checkpoint:
-                out_str = out_str[len("</s>") + len(prompt) :]
-            elif "google/flan" in checkpoint:
-                # print("full", out_str)
-                out_str = out_str[len("<pad>") : out_str.index("</s>")]
-            else:
-                out_str = out_str[len(prompt) :]
-            pkl.dump(out_str, open(cache_file, "wb"))
-            return out_str
+                if stop is not None:
+                    raise ValueError("stop kwargs are not permitted.")
+                inputs = self._tokenizer(
+                    prompt, return_tensors="pt", return_attention_mask=True
+                ).to(
+                    self._model.device
+                )  # .input_ids.to("cuda")
+                # stopping_criteria = StoppingCriteriaList([MaxLengthCriteria(max_length=max_tokens)])
+                # outputs = self._model.generate(input_ids, max_length=max_tokens, stopping_criteria=stopping_criteria)
+                # print('pad_token', self._tokenizer.pad_token)
+                if self._tokenizer.pad_token_id is None:
+                    self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
+                    torch.manual_seed(0)
+                outputs = self._model.generate(
+                    **inputs,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=do_sample,
+                    # pad_token=self._tokenizer.pad_token,
+                    pad_token_id=self._tokenizer.pad_token_id,
+                    # top_p=0.92,
+                    # top_k=0
+                )
+                out_str = self._tokenizer.decode(outputs[0])
+                if "facebook/opt" in self.checkpoint:
+                    out_str = out_str[len("</s>") + len(prompt) :]
+                elif "google/flan" in self.checkpoint:
+                    # print("full", out_str)
+                    out_str = out_str[len("<pad>") : out_str.index("</s>")]
+                elif "PMC_LLAMA" in self.checkpoint:
+                    print('here!', out_str)
+                    out_str = out_str[len("<unk>") + len(prompt):]
+                else:
+                    out_str = out_str[len(prompt) :]
+                pkl.dump(out_str, open(cache_file, "wb"))
+                return out_str
 
         def _get_logit_for_target_token(
             self, prompt: str, target_token_str: str
@@ -302,14 +313,26 @@ if __name__ == "__main__":
     # text = llm("What do these have in common? Horse, ")
     # print("text", text)
 
-    llm = get_llm("gpt2")
+    # llm = get_llm("gpt2")
+    # text = llm(
+        # """Continue this list
+# - apple
+# - banana
+# -"""
+    # )
+    # print("text", text)
+    # tokenizer = transformers.LlamaTokenizer.from_pretrained("chaoyi-wu/PMC_LLAMA_7B")
+    # model = transformers.LlamaForCausalLM.from_pretrained("chaoyi-wu/PMC_LLAMA_7B")
+
+    llm = get_llm("chaoyi-wu/PMC_LLAMA_7B")
     text = llm(
         """Continue this list
-- apple
-- banana
+- red
+- orange
+- yellow
 -"""
     )
-    print("text", text)
-    tokenizer = transformers.LlamaTokenizer.from_pretrained('chaoyi-wu/PMC_LLAMA_7B')
-    model = transformers.LlamaForCausalLM.from_pretrained('chaoyi-wu/PMC_LLAMA_7B')
-
+    print(text)
+    print('\n\n')
+    print(repr(text))
+    
