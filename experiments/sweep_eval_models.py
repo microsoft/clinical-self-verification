@@ -12,7 +12,7 @@ params_shared_dict = {
     'checkpoint': ['chaoyi-wu/PMC_LLAMA_7B'], # gpt-4-0314, text-davinci-003, chaoyi-wu/PMC_LLAMA_7B, gpt-3.5-turbo
     'n_shots': [1, 5], # [1, 5, 10]
     'dataset_name': ['ebm', 'medication_status'], # medication_status, ebm
-    'role_verify': ['"You are an expert medical scribe."'],
+    # 'role_verify': ['"You are an expert medical scribe."'], # only matters for chat models
 }
 
 # List of tuples to sweep over (these values are coupled, and swept over together)

@@ -222,10 +222,12 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
         def __call__(
             self,
             prompt: str,
-            stop: Optional[List[str]] = None,
+            stop: str=None,
             max_new_tokens=20,
             do_sample=False,
         ) -> str:
+            '''Warning: stop not actually used
+            '''
             with torch.no_grad():
                 # cache
                 os.makedirs(self.cache_dir, exist_ok=True)
@@ -236,8 +238,8 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
                 if os.path.exists(cache_file):
                     return pkl.load(open(cache_file, "rb"))
 
-                if stop is not None:
-                    raise ValueError("stop kwargs are not permitted.")
+                # if stop is not None:
+                    # raise ValueError("stop kwargs are not permitted.")
                 inputs = self._tokenizer(
                     prompt, return_tensors="pt", return_attention_mask=True
                 ).to(
@@ -265,10 +267,15 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
                     # print("full", out_str)
                     out_str = out_str[len("<pad>") : out_str.index("</s>")]
                 elif "PMC_LLAMA" in self.checkpoint:
-                    print('here!', out_str)
+                    # print('here!', out_str)
                     out_str = out_str[len("<unk>") + len(prompt):]
                 else:
                     out_str = out_str[len(prompt) :]
+
+                if stop is not None:
+                    assert isinstance(stop, str), stop
+                    out_str = out_str[: out_str.index(stop)]
+                
                 pkl.dump(out_str, open(cache_file, "wb"))
                 return out_str
 
