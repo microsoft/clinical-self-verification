@@ -272,8 +272,7 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
                 else:
                     out_str = out_str[len(prompt) :]
 
-                if stop is not None:
-                    assert isinstance(stop, str), stop
+                if stop is not None and isinstance(stop, str) and stop in out_str:
                     out_str = out_str[: out_str.index(stop)]
                 
                 pkl.dump(out_str, open(cache_file, "wb"))
