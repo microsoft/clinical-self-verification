@@ -9,6 +9,7 @@ import transformers
 from transformers import AutoConfig, AutoModel, AutoTokenizer, AutoModelForCausalLM
 from langchain.cache import InMemoryCache
 import re
+from transformers import LlamaForCausalLM, LlamaTokenizer
 from typing import Any, Dict, List, Mapping, Optional
 import numpy as np
 import openai
@@ -185,6 +186,8 @@ def llm_openai_chat(checkpoint="gpt-3.5-turbo", seed=1, role=None) -> LLM:
 
 
 def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
+    LLAMA_DIR = "/home/chansingh/llama"
+
     class LLM_HF:
         def __init__(self, checkpoint, seed):
             # set tokenizer
@@ -192,6 +195,10 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
                 # opt can't use fast tokenizer
                 self._tokenizer = AutoTokenizer.from_pretrained(
                     checkpoint, use_fast=False
+                )
+            elif "llama_" in checkpoint:
+                self._tokenizer = transformers.LlamaTokenizer.from_pretrained(
+                    join(LLAMA_DIR, checkpoint)
                 )
             elif "PMC_LLAMA" in checkpoint:
                 self._tokenizer = transformers.LlamaTokenizer.from_pretrained(
@@ -206,6 +213,12 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
             if "google/flan" in checkpoint:
                 self._model = T5ForConditionalGeneration.from_pretrained(
                     checkpoint, device_map="auto", torch_dtype=torch.float16
+                )
+            elif "llama_" in checkpoint:
+                self._model = transformers.LlamaForCausalLM.from_pretrained(
+                    join(LLAMA_DIR, checkpoint),
+                    device_map="auto",
+                    torch_dtype=torch.float16,
                 )
             elif checkpoint == "gpt-xl":
                 self._model = AutoModelForCausalLM.from_pretrained(checkpoint)
@@ -222,12 +235,12 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
         def __call__(
             self,
             prompt: str,
-            stop: str=None,
+            stop: str = None,
             max_new_tokens=20,
             do_sample=False,
+            use_cache=True,
         ) -> str:
-            '''Warning: stop not actually used
-            '''
+            """Warning: stop not actually used"""
             with torch.no_grad():
                 # cache
                 os.makedirs(self.cache_dir, exist_ok=True)
@@ -235,11 +248,11 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
                 cache_file = join(
                     self.cache_dir, f"{hash_str}__num_tok={max_new_tokens}.pkl"
                 )
-                if os.path.exists(cache_file):
+                if os.path.exists(cache_file) and use_cache:
                     return pkl.load(open(cache_file, "rb"))
 
                 # if stop is not None:
-                    # raise ValueError("stop kwargs are not permitted.")
+                # raise ValueError("stop kwargs are not permitted.")
                 inputs = self._tokenizer(
                     prompt, return_tensors="pt", return_attention_mask=True
                 ).to(
@@ -261,6 +274,7 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
                     # top_k=0
                 )
                 out_str = self._tokenizer.decode(outputs[0])
+                # print('out_str', out_str)
                 if "facebook/opt" in self.checkpoint:
                     out_str = out_str[len("</s>") + len(prompt) :]
                 elif "google/flan" in self.checkpoint:
@@ -268,13 +282,15 @@ def llm_hf(checkpoint="google/flan-t5-xl", seed=1) -> LLM:
                     out_str = out_str[len("<pad>") : out_str.index("</s>")]
                 elif "PMC_LLAMA" in self.checkpoint:
                     # print('here!', out_str)
-                    out_str = out_str[len("<unk>") + len(prompt):]
+                    out_str = out_str[len("<unk>") + len(prompt) :]
+                elif "llama_" in self.checkpoint:
+                    out_str = out_str[len("<s>") + len(prompt) :]
                 else:
                     out_str = out_str[len(prompt) :]
 
                 if stop is not None and isinstance(stop, str) and stop in out_str:
                     out_str = out_str[: out_str.index(stop)]
-                
+
                 pkl.dump(out_str, open(cache_file, "wb"))
                 return out_str
 
@@ -321,24 +337,26 @@ if __name__ == "__main__":
 
     # llm = get_llm("gpt2")
     # text = llm(
-        # """Continue this list
-# - apple
-# - banana
-# -"""
+    # """Continue this list
+    # - apple
+    # - banana
+    # -"""
     # )
     # print("text", text)
     # tokenizer = transformers.LlamaTokenizer.from_pretrained("chaoyi-wu/PMC_LLAMA_7B")
     # model = transformers.LlamaForCausalLM.from_pretrained("chaoyi-wu/PMC_LLAMA_7B")
 
-    llm = get_llm("chaoyi-wu/PMC_LLAMA_7B")
+    # llm = get_llm("chaoyi-wu/PMC_LLAMA_7B")
+    llm = get_llm("llama_65b")
     text = llm(
         """Continue this list
 - red
 - orange
 - yellow
--"""
+- green
+-""",
+        use_cache=False,
     )
     print(text)
-    print('\n\n')
+    print("\n\n")
     print(repr(text))
-    
