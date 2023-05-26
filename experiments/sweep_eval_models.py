@@ -9,7 +9,8 @@ params_shared_dict = {
     'seed': [1, 2, 3, 4, 5], # 1, 2, 3
     'save_dir': [join(repo_dir, 'results')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
-    'checkpoint': ['llama_65b', 'gpt-4-0314', 'text-davinci-003', 'chaoyi-wu/PMC_LLAMA_7B', 'gpt-3.5-turbo'], # 'gpt-4-0314', 'text-davinci-003', 'chaoyi-wu/PMC_LLAMA_7B', 'gpt-3.5-turbo'
+    # 'checkpoint': ['llama_65b', 'gpt-4-0314', 'text-davinci-003', 'chaoyi-wu/PMC_LLAMA_7B', 'gpt-3.5-turbo'], 
+    'checkpoint': ['gpt-4-0314', 'text-davinci-003', 'gpt-3.5-turbo'],
     'n_shots': [1, 5], # [1, 5, 10]
     'dataset_name': ['ebm', 'medication_status'], # medication_status, ebm
     # 'role_verify': ['"You are an expert medical scribe."'], # only matters for chat models
