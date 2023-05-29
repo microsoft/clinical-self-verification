@@ -24,6 +24,7 @@ def add_status_eval(r, dfe):
         for k in r.keys()
         if k.startswith("dict_") and not k.startswith("dict_evidence")
     ]
+    
     # common_meds_status_gt_dict = clin.eval.get_common_medications(r[dict_columns].values.flatten().tolist(), dfe)
     for i in range(r.shape[0]):
         row = r.iloc[i]

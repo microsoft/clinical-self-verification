@@ -26,11 +26,6 @@ Create a bulleted list of which medications are mentioned and whether they are a
 def get_megaprompt(df, examples_nums_shot: List[int], ex_num: int):
     prompt = """Create a bulleted list of which medications are mentioned and whether they are active, discontinued, or neither.
 
-Before you provide your final response:
-(1) Find any medications in the patient note that were missed.
-(2) Find evidence for each medication as a text span in the input.
-(3) Verify whether each extracted medication is actually a medication and that its status is correct.     
-
 """
     for ex in examples_nums_shot:
         prompt += f"""### Patient note: {df.iloc[ex]['snippet']}
@@ -39,7 +34,14 @@ Before you provide your final response:
 
 """
 
-    prompt += f"""### Patient note: {df.iloc[ex_num]['snippet']}
+    prompt += f"""
+
+Before you provide your final response:
+(1) Find any medications in the patient note that were missed.
+(2) Find evidence for each medication as a text span in the input.
+(3) Verify whether each extracted medication is actually a medication and that its status is correct.         
+
+### Patient note: {df.iloc[ex_num]['snippet']}
 
 -"""
     return prompt

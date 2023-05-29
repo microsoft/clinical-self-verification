@@ -6,7 +6,7 @@ repo_dir = dirname(dirname(os.path.abspath(__file__)))
 
 # List of values to sweep over (sweeps over all combinations of these)
 params_shared_dict = {
-    'seed': [1], # 1, 2, 3
+    'seed': [1, 2, 3], # 1, 2, 3
     'save_dir': [join(repo_dir, 'results-mega')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
     # 'checkpoint': ['llama_65b', 'gpt-4-0314', 'text-davinci-003', 'chaoyi-wu/PMC_LLAMA_7B', 'gpt-3.5-turbo'], 

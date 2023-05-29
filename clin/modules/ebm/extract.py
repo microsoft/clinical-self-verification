@@ -28,12 +28,6 @@ def get_multishot_prompt(df, examples_nums_shot: List[int], ex_num: int):
 
 def get_megaprompt(df, examples_nums_shot: List[int], ex_num: int):
     prompt = """Read each patient note and create a bulleted list of the interventions in the clinical trial. Intervention names should be simple, avoid acronyms, and not contain any information in parentheses.
-
-Before you provide your final response:
-(1) Find any interventions that were missed.
-(2) Find evidence for each intervention as a text span in the input.
-(3) Verify whether each extracted intervention is actually an intervention.
-
 """
     for ex in examples_nums_shot:
         prompt += f"""### Patient note
@@ -45,6 +39,11 @@ Before you provide your final response:
 """
     prompt += f"""### Patient note
 {df.iloc[ex_num]['doc']}
+
+Before you provide your final response:
+(1) Find any interventions that were missed.
+(2) Find evidence for each intervention as a text span in the input.
+(3) Verify whether each extracted intervention is actually an intervention.
 
 ### Create a bulleted list of the arms in this trial.
 -"""
