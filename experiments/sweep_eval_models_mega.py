@@ -6,15 +6,15 @@ repo_dir = dirname(dirname(os.path.abspath(__file__)))
 
 # List of values to sweep over (sweeps over all combinations of these)
 params_shared_dict = {
-    'seed': [1, 2, 3, 4, 5], # 1, 2, 3
-    'save_dir': [join(repo_dir, 'results')],
+    'seed': [1], # 1, 2, 3
+    'save_dir': [join(repo_dir, 'results-mega')],
     'use_cache': [1], # pass binary values with 0/1 instead of the ambiguous strings True/False
     # 'checkpoint': ['llama_65b', 'gpt-4-0314', 'text-davinci-003', 'chaoyi-wu/PMC_LLAMA_7B', 'gpt-3.5-turbo'], 
     'checkpoint': ['gpt-4-0314', 'text-davinci-003', 'gpt-3.5-turbo'],
     # 'n_shots': [1, 5], # [1, 5]
-    'n_shots': [1, 5],
-    'dataset_name': ['ebm', 'medication_status'], # medication_status, ebm
-    'use_megaprompt': [0], # 0, 1
+    'n_shots': [5],
+    'dataset_name': ['medication_status', 'ebm'], # medication_status, ebm
+    'use_megaprompt': [1], # 0, 1
     # 'role_verify': ['"You are an expert medical scribe."'], # only matters for chat models
 }
 
@@ -32,7 +32,7 @@ submit_utils.run_args_list(
     args_list,
     script_name=join(repo_dir, 'experiments', 'eval_model.py'),
     actually_run=True,
-    n_cpus=1,
+    n_cpus=3,
     # shuffle=False,
     # reverse=True
 )

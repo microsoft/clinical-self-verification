@@ -30,8 +30,11 @@ def eval_med_status(r, args, df, nums, n):
     # perform basic extraction
     extractor = med_status.extract.Extractor()
     r["extracted_strs"] = [
-        extractor(i, df, nums, args.n_shots, llm) for i in tqdm(range(len(df)))
+        extractor(i, df, nums, args.n_shots, llm, args.use_megaprompt) for i in tqdm(range(len(df)))
     ]
+
+    if args.use_megaprompt:
+        return r
     # medications_dict_list = [
     #     clin.parse.parse_response_medication_list(r["extracted_strs"][i])
     #     for i in range(len(df))
@@ -169,8 +172,10 @@ def eval_ebm(r, args, df, nums, n):
     llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
 
     r["list_original"] = [
-        extractor(i, df, nums, args.n_shots, llm) for i in tqdm(range(len(df)))
+        extractor(i, df, nums, args.n_shots, llm, args.use_megaprompt) for i in tqdm(range(len(df)))
     ]
+    if args.use_megaprompt:
+        return r
 
     if args.checkpoint_verify is None:
         args.checkpoint_verify = args.checkpoint
@@ -282,6 +287,13 @@ def add_main_args(parser):
         type=str,
         default=None,
         help="role of llm checkpoint used for verification",
+    )
+    parser.add_argument(
+        "--use_megaprompt",
+        type=int,
+        default=0,
+        choices=[0, 1],
+        help="whether to use megaprompt (runs extraction with a long prompt and does not run self-verification)",
     )
 
     # prompt args
