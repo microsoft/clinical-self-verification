@@ -178,10 +178,7 @@ EXS_NEG = [EX_WITH_EVIDENCE_ADDED_0, EX_WITH_EVIDENCE_ADDED_1, EX_WITH_EVIDENCE_
 
 
 
-PROMPT_V1 = f"""Verify whether each extracted medication is present in the patient note in a bulleted list.
-If it is present, extract the span of text from the patient note as evidence. If it is not clearly present, write "{NO_EVIDENCE}". Write a bullet for every extracted medication."""
-
-PROMPT_V2 = f"""Find the span of text which corresponds to each extracted medication and its status. If no evidence is found, write "{NO_EVIDENCE}". Write a bullet for every extracted medication."""
+PROMPT_V1 = f"""Find the span of text which corresponds to each extracted medication and its status. If no evidence is found, write "{NO_EVIDENCE}". Write a bullet for every extracted medication."""
 
 
 class EvidenceVerifier:
@@ -191,7 +188,7 @@ class EvidenceVerifier:
         exs = exs_pos + exs_neg
         # print(exs.shape)
         # print(exs[0])
-        self.prompt = PROMPT_V2 + '\n\n' + '\n\n\n'.join(exs)
+        self.prompt = PROMPT_V1 + '\n\n' + '\n\n\n'.join(exs)
 
     def __call__(self, snippet, bulleted_str, llm) -> Tuple[Dict[str, str]]:
         prompt_ex = self.prompt + '\n\n\n' + f'''Patient Note

@@ -2,7 +2,7 @@ from copy import deepcopy
 import numpy as np
 from typing import Dict, List, Tuple
 import clin.parse
-import clin.llm
+import imodelsx.llm
 from os.path import join
 
 PROMPT_V1 = """Find the span of text which corresponds to each extracted medication and its status. If no evidence is found, write "no evidence". Write a bullet for every extracted medication.
@@ -71,7 +71,7 @@ class EvidenceVerifier:
 
 if __name__ == "__main__":
     v = EvidenceVerifier()
-    llm = clin.llm.get_llm("text-davinci-003")
+    llm = imodelsx.llm.get_llm("text-davinci-003")
     arms_list = ["granisetron", "perphenazine", "banana"]
     snippet = "Anti-emetic efficacy of prophylactic granisetron compared with perphenazine for the prevention of post-operative vomiting in children.\n\nWe have compared the efficacy of granisetron with perphenazine in the prevention of vomiting after tonsillectomy with or without adenoidectomy in children. In a prospective, randomized, double-blind study, 90 paediatric patients, ASA I, aged 4-10 years, received granisetron 40 mg kg-1 or perphenazine 70 mg kg-1 (n = 45 each) intravenously immediately after an inhalation induction of anaesthesia. A standard general anaesthetic technique was employed throughout. A complete response, defined as no emesis with no need for another rescue antiemetic, during the first 3 h (0-3 h) after anesthesia was 87% with granisetron and 78% with perphenazine (P = 0.204). The corresponding incidence during the next 21 h (3-24 h) after anaesthesia was 87% and 62% (P = 0.007). No clinically serious adverse events were observed in any of the groups. We conclude that granisetron is a better anti-emetic than perphenazine for the long-term prevention of post-operative vomiting in children undergoing general anaesthesia for tonsillectomy."
     arms_new = v(snippet, arms_list, llm, verbose=True)

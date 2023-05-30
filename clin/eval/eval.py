@@ -4,16 +4,9 @@ import seaborn as sns
 from os.path import join
 from tqdm import tqdm
 import pandas as pd
-import joblib
-import sys
-import datasets
-import time
-import openai
 import numpy as np
 from typing import List, Dict
 from collections import defaultdict
-import clin.parse
-import sklearn.metrics
 
 # note, eval should be case-insensitive, preprocess before passing to these funcs
 def calculate_precision_recall_from_lists(

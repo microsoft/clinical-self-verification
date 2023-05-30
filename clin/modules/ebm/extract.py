@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Dict, List, Tuple
 import clin.parse
-import clin.llm
+import imodelsx.llm
 import time
 import joblib
 from os.path import join
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     np.random.default_rng(seed=13).shuffle(nums)
     dfe = df.iloc[nums]
     n = len(dfe)
-    llm = clin.llm.get_llm("text-davinci-003")
+    llm = imodelsx.llm.get_llm("text-davinci-003")
 
     i = 0
     extractor = Extractor()

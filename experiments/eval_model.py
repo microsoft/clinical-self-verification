@@ -11,7 +11,7 @@ import pandas as pd
 from tqdm import tqdm
 import torch
 import clin.config
-import clin.llm
+import imodelsx.llm
 import clin.parse
 import clin.eval.eval
 import clin.eval.med_status
@@ -25,7 +25,7 @@ from imodelsx import cache_save_utils
 
 # python experiments/01_eval_model.py --use_cache 0
 def eval_med_status(r, args, df, nums, n):
-    llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
+    llm = imodelsx.llm.get_llm(args.checkpoint, seed=args.seed)
 
     # perform basic extraction
     extractor = med_status.extract.Extractor()
@@ -50,7 +50,7 @@ def eval_med_status(r, args, df, nums, n):
         # load llm for verification
         if args.checkpoint_verify is None:
             args.checkpoint_verify = args.checkpoint
-        llm = clin.llm.get_llm(
+        llm = imodelsx.llm.get_llm(
             args.checkpoint_verify, seed=args.seed, role=args.role_verify
         )
 
@@ -172,7 +172,7 @@ def eval_ebm(r, args, df, nums, n):
     pv = ebm.prune.PruneVerifier()
     ev = ebm.evidence.EvidenceVerifier()
 
-    llm = clin.llm.get_llm(args.checkpoint, seed=args.seed)
+    llm = imodelsx.llm.get_llm(args.checkpoint, seed=args.seed)
 
     r["list_original"] = [
         extractor(i, df, nums, args.n_shots, llm, args.use_megaprompt)
@@ -181,7 +181,7 @@ def eval_ebm(r, args, df, nums, n):
     if not args.use_megaprompt:
         if args.checkpoint_verify is None:
             args.checkpoint_verify = args.checkpoint
-        llm = clin.llm.get_llm(
+        llm = imodelsx.llm.get_llm(
             args.checkpoint_verify, seed=args.seed, role=args.role_verify
         )
 

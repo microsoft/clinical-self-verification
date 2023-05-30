@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Dict, List, Tuple
 import clin.parse
-import clin.llm
+import imodelsx.llm
 import time
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Dict, List, Tuple
 import clin.parse
-import clin.llm
+import imodelsx.llm
 
 ######## Original examples with evidence ###############################
 EX_0_POS = f"""Patient Note
@@ -101,10 +101,7 @@ Revised: "Zosyn" (active)"""
 EXS_POS = [EX_1_POS, EX_0_POS]
 EXS_NEG = [EX_0_NEG, EX_2_NEG, EX_3_NEG]
 
-PROMPT_V1 = f"""Check the status of each medication found in the patient note (active, discontinued, or neither). Use the patient note and the extracted evidence to revise the medication's status if necessary. If the medication status is not clearly active or discontinued, set it to "neither"."""
-PROMPT_V2 = f"""Revise the status of each medication, based on the patient note and the extracted evidence. The status should be active, discontinued, or neither. If the medication status is not clearly active or discontinued, revise it to neither."""
-PROMPT_V3 = f"""Revise the status of each medication, based on the patient note and the extracted evidence snippet. The status should be active, discontinued, or neither. If the evidence does not very clearly show that status is active or discontinued, revise it to neither."""
-PROMPT_V4 = f"""Revise the status of each medication, based on the patient note and the extracted evidence snippet. The status should be active, discontinued, or neither. If the evidence does not show that status is clearly active or discontinued, revise it to neither."""
+PROMPT_V1 = f"""Revise the status of each medication, based on the patient note and the extracted evidence snippet. The status should be active, discontinued, or neither. If the evidence does not show that status is clearly active or discontinued, revise it to neither."""
 # + # 'Only change the status if the evidence clearly warrants a change.'
 
 
@@ -115,7 +112,7 @@ class StatusVerifier:
         exs_pos = EXS_POS[: self.n_shots_pos]
         exs_neg = EXS_NEG[: self.n_shots_neg]
         exs = exs_pos + exs_neg
-        self.prompt = PROMPT_V4 + "\n\n" + "\n\n\n".join(exs)
+        self.prompt = PROMPT_V1 + "\n\n" + "\n\n\n".join(exs)
 
     def __call__(
         self,
@@ -153,12 +150,14 @@ Revised:"""
                 print("RESP", repr(med_and_status_revised))
                 # print("STATUS", status)
                 if not status == med_status_dict[med]:
-                    print('***status changed from', med_status_dict[med], 'to', status)
+                    print("***status changed from", med_status_dict[med], "to", status)
                 print()
-            
 
             # make new dict (don't revise if it already predicted neither, since that's kind of rare)
-            if status in ["active", "discontinued", "neither"] and not med_status_dict[med] == 'neither':
+            if (
+                status in ["active", "discontinued", "neither"]
+                and not med_status_dict[med] == "neither"
+            ):
                 med_status_dict_revised[med] = status
             else:
                 med_status_dict_revised[med] = med_status_dict[med]
@@ -182,6 +181,6 @@ if __name__ == "__main__":
         "celexa": "discontinued",  # should be neither
         "lexapro": "discontinued",  # should be active
     }
-    llm = clin.llm.get_llm("text-davinci-003")
+    llm = imodelsx.llm.get_llm("text-davinci-003")
     med_status_dict = v(snippet, med_status_dict, med_evidence_dict, llm, verbose=True)
     print(med_status_dict)
