@@ -1,6 +1,6 @@
 # Experiments with self-verification using LLMS for clinical tasks.
 
-Code for paper "Self-Verification Improves Few-Shot Clinical Information Extraction" ([Gero et al. 2023](arxiv.org/abs/2306.00024)).
+Code for paper "Self-Verification Improves Few-Shot Clinical Information Extraction" ([Gero et al. 2023](https://arxiv.org/abs/2306.00024)).
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-mit-blue.svg">
