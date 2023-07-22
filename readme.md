@@ -1,6 +1,6 @@
 # Experiments with self-verification using LLMS for clinical tasks.
 
-Code for paper "Self-Verification Improves Few-Shot Clinical Information Extraction" (Gero et al. 2023).
+Code for paper "Self-Verification Improves Few-Shot Clinical Information Extraction" ([Gero et al. 2023](https://arxiv.org/abs/2306.00024)).
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-mit-blue.svg">
@@ -21,3 +21,13 @@ The self-verification pipeline here extracts clinical information along with evi
 <p align="center">
   <img src="https://microsoft.github.io/clinical-self-verification/figs/med_status_ex.png" width="60%">
 </p>
+
+
+```
+@misc{gero2023selfverification,
+      title={Self-Verification Improves Few-Shot Clinical Information Extraction}, 
+      author={Zelalem Gero and Chandan Singh and Hao Cheng and Tristan Naumann and Michel Galley and Jianfeng Gao and Hoifung Poon},
+      year={2023},
+      journal={arXiv preprint arXiv:2306.00024},
+}
+```
